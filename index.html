@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,9 +8,10 @@
   <meta name="description" content="CleanFlow Engineering provides industrial water quality testing, laboratory analysis, treatment recommendations, and water treatment chemical solutions.">
 
   <link rel="stylesheet" href="styles.css">
-  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@5/dist/email.min.js"></script>
-  <script src="script.js" defer></script>
 
+  <!-- Load EmailJS before your website JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <script src="script.js" defer></script>
 </head>
 
 <body>
@@ -47,20 +49,17 @@
     <div class="hero-content">
       <div class="hero-text reveal">
         <div class="badge">CHEMICAL ENGINEERING WATER SOLUTIONS</div>
-
         <h1>Smarter Water Treatment.
           <span>Cleaner Future.</span>
         </h1>
-
         <p>
           CleanFlow Engineering provides industrial water quality testing,
           laboratory analysis, customized treatment recommendations, and
           water treatment chemical solutions.
         </p>
-
         <div class="hero-buttons">
           <a href="#services" class="btn primary">Explore Services</a>
-          <a href="#quote" class="btn outline">Check Out Services</a>
+          <a href="#packages" class="btn outline">Check Out Services</a>
         </div>
       </div>
 
@@ -526,7 +525,7 @@
 
     <div class="payment-options">
       <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="GCash" required>
+        <input type="radio" name="paymentMethod" value="GCash">
         <span class="payment-option-content">
           <span class="payment-icon">📱</span>
           <strong>GCash</strong>
@@ -535,7 +534,7 @@
       </label>
 
       <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="Credit Card" required>
+        <input type="radio" name="paymentMethod" value="Credit Card">
         <span class="payment-option-content">
           <span class="payment-icon">💳</span>
           <strong>Credit Card</strong>
@@ -544,7 +543,7 @@
       </label>
 
       <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="Debit Card" required>
+        <input type="radio" name="paymentMethod" value="Debit Card">
         <span class="payment-option-content">
           <span class="payment-icon">💳</span>
           <strong>Debit Card</strong>
@@ -553,7 +552,7 @@
       </label>
 
       <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="Online Bank Transfer" required>
+        <input type="radio" name="paymentMethod" value="Online Bank Transfer">
         <span class="payment-option-content">
           <span class="payment-icon">🏦</span>
           <strong>Online Bank Transfer</strong>
