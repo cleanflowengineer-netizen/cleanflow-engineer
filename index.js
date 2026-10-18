@@ -341,7 +341,7 @@ return sendJson(res, 201, {
   status: order.status,
   demo: true
 });
-
+    }
     // CHECK ORDER STATUS.
     const orderMatch = route.match(
       /^\/api\/orders\/([a-f0-9-]+)$/i
@@ -468,7 +468,7 @@ return sendJson(res, 201, {
   status: refund.status,
   demo: true
 });
-
+    }
     // SERVE THE WEBSITE FILES.
     if (req.method === "GET") {
       const requestedPath =
