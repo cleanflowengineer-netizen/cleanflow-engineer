@@ -129,6 +129,8 @@ document.addEventListener("DOMContentLoaded", function () {
     /* ==========================================
        4. HELPER FUNCTIONS
     ========================================== */
+
+    
     // EmailJS setup for customer order confirmations
     const EMAILJS_PUBLIC_KEY = "zTVG7TfT8a3f7C28r";
     const EMAILJS_SERVICE_ID = "service_ndmbg2r";
@@ -465,28 +467,64 @@ document.addEventListener("DOMContentLoaded", function () {
                     }
                 };
 
-                const result = await sendJSON(
+                  const result = await sendJSON(
                     "/api/orders",
                     orderData
-                );
+                  );
 
-                const orderId =
+                  const orderId =
                     result.orderId ||
                     result.id ||
                     result.order?.id;
 
-               
-                  // The Node.js backend sends the customer and owner emails
-                  // after successfully saving the order.
-                  const emailMessage =
-                "\nYour order has been saved. Email notifications may be delayed or unavailable in demo mode.";
-                let successMessage =
-                    "Your demo order has been submitted successfully.";
 
-                if (orderId) {
+                  // Send the confirmation email only after the server
+                  // successfully saves the order.
+                  let emailMessage = "";
+
+                  if (window.emailjs) {
+                      try {
+                          await window.emailjs.send(
+                              EMAILJS_SERVICE_ID,
+                              EMAILJS_ORDER_TEMPLATE_ID,
+                              {
+                                  email: emailInput.value.trim(),
+                                  name: nameInput.value.trim(),
+                                  order_id: orderId || "Not provided",
+                                  company: companyInput
+                                      ? companyInput.value.trim()
+                                      : "",
+                                  service: serviceInput.value,
+                                  payment_method: paymentMethod,
+                                  payment_reference: paymentReferenceInput
+                                      ? paymentReferenceInput.value.trim()
+                                      : "",
+                                  status: "Pending Verification"
+                              }
+                          );
+
+                          emailMessage =
+                              "\nConfirmation email sent successfully.";
+                      } catch (emailError) {
+                          console.error(
+                              "Order saved, but confirmation email failed:",
+                              emailError
+                          );
+
+                          emailMessage =
+                              "\nYour order was saved, but the confirmation email could not be sent. Please check the EmailJS settings.";
+                      }
+                  } else {
+                      emailMessage =
+                          "\nEmail service is unavailable. Your order was still saved.";
+                  }
+
+                  let successMessage =
+                      "Your demo order has been submitted successfully.";
+
+                  if (orderId) {
                     successMessage +=
                         "\nOrder reference: " + orderId;
-
                     const refundOrderId =
                         document.getElementById("refundOrderId");
 
@@ -499,10 +537,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     "\nStatus: Awaiting manual payment verification. Your receipt must be checked by the administrator. This is not an automatic payment confirmation.";
 
                 showMessage(
-                   paymentResult,
-                   successMessage + emailMessage,
-                   true
-                  );
+                    paymentResult,
+                    successMessage + emailMessage,
+                    true
+                );
 
                 const refundEmail =
                     document.getElementById("refundEmail");
