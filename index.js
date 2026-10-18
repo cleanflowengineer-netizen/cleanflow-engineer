@@ -11,9 +11,9 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const REFUNDS_FILE = path.join(DATA_DIR, "refunds.json");
 const PORT = Number(process.env.PORT || 3000);
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const RESEND_FROM_EMAIL = process.env.RESEND_FROM_EMAIL;
-const ADMIN_EMAIL = "cleanflowengineering@gmail.com";
+const GMAIL_USER = process.env.GMAIL_USER;
+const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "cleanflowengineering@gmail.com";
 
 const MAX_REQUEST_SIZE = 6 * 1024 * 1024;
 const MAX_RECEIPT_SIZE = 4 * 1024 * 1024;
@@ -78,46 +78,35 @@ function sendJson(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
-async function sendResendEmail({ to, subject, html }) {
-  if (!RESEND_API_KEY) {
-    console.error("Email not sent: RESEND_API_KEY is missing.");
+
+async function sendEmail({ to, subject, html }) {
+  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    console.error(
+      "Email not sent: GMAIL_USER or GMAIL_APP_PASSWORD is missing."
+    );
     return false;
   }
 
-  if (!RESEND_FROM_EMAIL) {
-    console.error("Email not sent: RESEND_FROM_EMAIL is missing.");
-    return false;
-  }
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD
+    }
+  });
 
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: `CleanFlow Engineering <${RESEND_FROM_EMAIL}>`,
-        to: [to],
-        subject,
-        html
-      })
+    const info = await transporter.sendMail({
+      from: `"CleanFlow Engineering" <${GMAIL_USER}>`,
+      to,
+      subject,
+      html
     });
 
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Resend email error:", response.status, result);
-      return false;
-    }
-
-    console.log(
-      `Resend email accepted for ${to}:`,
-      result.id
-    );
+    console.log(`Gmail email sent to ${to}:`, info.messageId);
     return true;
   } catch (error) {
-    console.error("Resend request failed:", error.message);
+    console.error(`Gmail email failed for ${to}:`, error.message);
     return false;
   }
 }
@@ -221,7 +210,7 @@ async function saveReceipt(receipt) {
 async function notifyOrder(order) {
   const notes = order.notes || "No additional instructions provided.";
 
-  const customerEmailSent = await sendResendEmail({
+  const customerEmailSent = await sendEmail({
     to: order.customerEmail,
     subject: `CleanFlow Engineering - Order Confirmation - ${order.id}`,
     html: `
@@ -251,7 +240,7 @@ async function notifyOrder(order) {
     `
   });
 
-  const ownerEmailSent = await sendResendEmail({
+  const ownerEmailSent = await sendEmail({
     to: ADMIN_EMAIL,
     subject: `New CleanFlow Order - ${order.id}`,
     html: `
@@ -280,7 +269,7 @@ async function notifyOrder(order) {
 }
 
 async function notifyRefund(refund) {
-  const customerEmailSent = await sendResendEmail({
+  const customerEmailSent = await sendEmail({
     to: refund.customerEmail,
     subject: `CleanFlow Refund Request Received - ${refund.id}`,
     html: `
@@ -297,7 +286,7 @@ async function notifyRefund(refund) {
     `
   });
 
-  const ownerEmailSent = await sendResendEmail({
+  const ownerEmailSent = await sendEmail({
     to: ADMIN_EMAIL,
     subject: `New CleanFlow Refund Request - ${refund.id}`,
     html: `
@@ -551,9 +540,11 @@ initializeStorage()
       console.log(`CleanFlow demo server running on port ${PORT}.`);
       console.log("Demo only: no real payments or refunds.");
       console.log(
-        "Email sender configured:",
-        RESEND_FROM_EMAIL ? "yes" : "no - set RESEND_FROM_EMAIL in Render"
-      );
+  "Email sender configured:",
+  GMAIL_USER && GMAIL_APP_PASSWORD
+    ? "yes"
+    : "no - set GMAIL_USER and GMAIL_APP_PASSWORD in Render"
+);
     });
   })
   .catch(error => {
