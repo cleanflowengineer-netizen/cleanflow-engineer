@@ -296,10 +296,10 @@ const server = http.createServer(async (req, res) => {
         demo: true,
         createdAt: new Date().toISOString()
       };
-
-     
-orders.push(order);
-await saveRecords(ORDERS_FILE, orders);
+      
+      const orders = await readRecords(ORDERS_FILE);     
+      orders.push(order);
+      await saveRecords(ORDERS_FILE, orders);
 
 // Send the customer confirmation.
 await sendResendEmail({
