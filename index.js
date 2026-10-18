@@ -1,3 +1,4 @@
+
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -10,59 +11,12 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const REFUNDS_FILE = path.join(DATA_DIR, "refunds.json");
 const PORT = Number(process.env.PORT || 3000);
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const ADMIN_EMAIL = "cleanflowengineer@gmail.com";
-
-// Send an email through Resend.
-// Email failures are logged but won't undo a saved order or refund.
-async function sendResendEmail({ to, subject, html }) {
-  if (!RESEND_API_KEY) {
-    console.error("Email not sent: RESEND_API_KEY is missing.");
-    return false;
-  }
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${RESEND_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: "CleanFlow Engineering <onboarding@resend.dev>",
-        to: Array.isArray(to) ? to : [to],
-        subject,
-        html
-      })
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      console.error("Resend email error:", response.status, result);
-      return false;
-    }
-
-    console.log("Resend email accepted:", result.id);
-    return true;
-  } catch (error) {
-    console.error("Resend request failed:", error.message);
-    return false;
-  }
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
-}
+const ADMIN_PASSWORD =
+  process.env.ADMIN_PASSWORD || "CleanFlowDemo2026!";
 
 const MAX_REQUEST_SIZE = 6 * 1024 * 1024;
 const MAX_RECEIPT_SIZE = 4 * 1024 * 1024;
+const SESSION_DURATION = 8 * 60 * 60 * 1000;
 
 const SERVICES = [
   "Basic Testing",
@@ -93,13 +47,17 @@ const MIME_TYPES = {
   ".jpeg": "image/jpeg",
   ".webp": "image/webp",
   ".svg": "image/svg+xml",
-  ".ico": "image/x-icon"
+  ".ico": "image/x-icon",
+  ".pdf": "application/pdf"
 };
+
+const sessions = new Map();
 
 async function ensureJsonFile(file) {
   try {
     await fs.access(file);
-  } catch {
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
     await fs.writeFile(file, "[]", "utf8");
   }
 }
@@ -112,24 +70,53 @@ async function initializeStorage() {
 
 async function readRecords(file) {
   await ensureJsonFile(file);
-  return JSON.parse(await fs.readFile(file, "utf8"));
+
+  let data;
+
+  try {
+    data = JSON.parse(await fs.readFile(file, "utf8"));
+  } catch {
+    throw new Error(
+      "Could not read " + path.basename(file) +
+      ". Check that the file contains valid JSON."
+    );
+  }
+
+  if (!Array.isArray(data)) {
+    throw new Error(
+      "The data file must contain a JSON array: " +
+      path.basename(file)
+    );
+  }
+
+  return data;
 }
 
 async function saveRecords(file, records) {
-  const temporaryFile = file + ".tmp";
-  await fs.writeFile(
-    temporaryFile,
-    JSON.stringify(records, null, 2),
-    "utf8"
-  );
-  await fs.rename(temporaryFile, file);
+  const temporaryFile = file + "." + crypto.randomUUID() + ".tmp";
+
+  try {
+    await fs.writeFile(
+      temporaryFile,
+      JSON.stringify(records, null, 2),
+      "utf8"
+    );
+
+    await fs.rename(temporaryFile, file);
+  } catch (error) {
+    await fs.rm(temporaryFile, { force: true }).catch(() => {});
+    throw error;
+  }
 }
 
-function sendJson(res, statusCode, data) {
+function sendJson(res, statusCode, data, extraHeaders = {}) {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    ...extraHeaders
   });
+
   res.end(JSON.stringify(data));
 }
 
@@ -143,17 +130,77 @@ function validEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+function parseCookies(req) {
+  const cookies = {};
+  const header = req.headers.cookie || "";
+
+  for (const part of header.split(";")) {
+    const separator = part.indexOf("=");
+
+    if (separator < 0) continue;
+
+    const name = part.slice(0, separator).trim();
+    const value = part.slice(separator + 1).trim();
+
+    try {
+      cookies[name] = decodeURIComponent(value);
+    } catch {
+      cookies[name] = "";
+    }
+  }
+
+  return cookies;
+}
+
+function getSession(req) {
+  const token = parseCookies(req).cleanflow_admin;
+
+  if (!token) return null;
+
+  const session = sessions.get(token);
+
+  if (!session) return null;
+
+  if (session.expiresAt <= Date.now()) {
+    sessions.delete(token);
+    return null;
+  }
+
+  session.expiresAt = Date.now() + SESSION_DURATION;
+
+  return { token, session };
+}
+
+function requireAdmin(req, res) {
+  if (!getSession(req)) {
+    sendJson(res, 401, {
+      error: "Administrator login required. Please log in again."
+    });
+    return false;
+  }
+
+  return true;
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
-    let chunks = [];
+    const chunks = [];
     let totalSize = 0;
+    let finished = false;
 
     req.on("data", chunk => {
+      if (finished) return;
+
       totalSize += chunk.length;
 
       if (totalSize > MAX_REQUEST_SIZE) {
-        reject(new Error("Request too large. Please use a smaller receipt."));
-        req.destroy();
+        finished = true;
+
+        reject(new Error(
+          "Request too large. Please use a smaller receipt."
+        ));
+
+        req.resume();
         return;
       }
 
@@ -161,15 +208,29 @@ function readJsonBody(req) {
     });
 
     req.on("end", () => {
+      if (finished) return;
+
       try {
         const content = Buffer.concat(chunks).toString("utf8");
-        resolve(JSON.parse(content || "{}"));
+        const data = JSON.parse(content || "{}");
+
+        if (
+          !data ||
+          typeof data !== "object" ||
+          Array.isArray(data)
+        ) {
+          throw new Error("Invalid request data.");
+        }
+
+        resolve(data);
       } catch {
         reject(new Error("Invalid request data."));
       }
     });
 
-    req.on("error", reject);
+    req.on("error", error => {
+      if (!finished) reject(error);
+    });
   });
 }
 
@@ -191,7 +252,10 @@ async function saveReceipt(receipt) {
   const contentType = match[1];
   const fileContents = Buffer.from(match[2], "base64");
 
-  if (!fileContents.length || fileContents.length > MAX_RECEIPT_SIZE) {
+  if (
+    !fileContents.length ||
+    fileContents.length > MAX_RECEIPT_SIZE
+  ) {
     throw new Error("Receipt must be smaller than 4 MB.");
   }
 
@@ -212,6 +276,31 @@ async function saveReceipt(receipt) {
   };
 }
 
+function orderForAdmin(order) {
+  return {
+    ...order,
+    receipt: order.receipt
+      ? {
+          ...order.receipt,
+          url:
+            "/api/admin/receipts/" +
+            encodeURIComponent(order.receipt.filename)
+        }
+      : null
+  };
+}
+
+function safeOrderForCustomer(order) {
+  return {
+    orderId: order.id,
+    service: order.service,
+    status: order.status,
+    createdAt: order.createdAt,
+    updatedAt: order.updatedAt || null,
+    demo: true
+  };
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(
@@ -219,9 +308,17 @@ const server = http.createServer(async (req, res) => {
       `http://${req.headers.host || "localhost"}`
     );
 
-    const route = decodeURIComponent(url.pathname);
+    let route;
 
-    // Check whether the demo server is running.
+    try {
+      route = decodeURIComponent(url.pathname);
+    } catch {
+      return sendJson(res, 400, {
+        error: "Invalid URL."
+      });
+    }
+
+    // ---------------- HEALTH CHECK ----------------
     if (req.method === "GET" && route === "/api/health") {
       return sendJson(res, 200, {
         ok: true,
@@ -230,7 +327,280 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // CREATE AN ORDER.
+    // ---------------- ADMIN LOGIN ----------------
+    if (req.method === "POST" && route === "/api/admin/login") {
+      const body = await readJsonBody(req);
+      const password =
+        typeof body.password === "string" ? body.password : "";
+
+      const supplied = Buffer.from(password, "utf8");
+      const expected = Buffer.from(ADMIN_PASSWORD, "utf8");
+
+      const passwordMatches =
+        supplied.length === expected.length &&
+        crypto.timingSafeEqual(supplied, expected);
+
+      if (!passwordMatches) {
+        return sendJson(res, 401, {
+          error: "Incorrect administrator password."
+        });
+      }
+
+      const oldToken = parseCookies(req).cleanflow_admin;
+
+      if (oldToken) sessions.delete(oldToken);
+
+      const token = crypto.randomBytes(32).toString("hex");
+
+      sessions.set(token, {
+        expiresAt: Date.now() + SESSION_DURATION
+      });
+
+      return sendJson(
+        res,
+        200,
+        {
+          ok: true,
+          message: "Admin login successful."
+        },
+        {
+          "Set-Cookie":
+            "cleanflow_admin=" + token +
+            "; HttpOnly; SameSite=Lax; Path=/; Max-Age=" +
+            Math.floor(SESSION_DURATION / 1000)
+        }
+      );
+    }
+
+    // ---------------- ADMIN SESSION CHECK ----------------
+    if (req.method === "GET" && route === "/api/admin/session") {
+      if (!requireAdmin(req, res)) return;
+
+      return sendJson(res, 200, {
+        ok: true,
+        authenticated: true
+      });
+    }
+
+    // ---------------- ADMIN LOGOUT ----------------
+    if (req.method === "POST" && route === "/api/admin/logout") {
+      const token = parseCookies(req).cleanflow_admin;
+
+      if (token) sessions.delete(token);
+
+      return sendJson(
+        res,
+        200,
+        {
+          ok: true,
+          message: "Logged out successfully."
+        },
+        {
+          "Set-Cookie":
+            "cleanflow_admin=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0"
+        }
+      );
+    }
+
+    // ---------------- ADMIN VIEW ORDERS ----------------
+    if (req.method === "GET" && route === "/api/admin/orders") {
+      if (!requireAdmin(req, res)) return;
+
+      const orders = await readRecords(ORDERS_FILE);
+
+      return sendJson(res, 200, {
+        orders: orders.slice().reverse().map(orderForAdmin)
+      });
+    }
+
+    // ---------------- ADMIN VIEW REFUNDS ----------------
+    if (req.method === "GET" && route === "/api/admin/refunds") {
+      if (!requireAdmin(req, res)) return;
+
+      const refunds = await readRecords(REFUNDS_FILE);
+
+      return sendJson(res, 200, {
+        refunds: refunds.slice().reverse()
+      });
+    }
+
+    // ---------------- VIEW A SAVED RECEIPT ----------------
+    const receiptMatch = route.match(
+      /^\/api\/admin\/receipts\/([a-f0-9-]+\.(?:jpg|png|webp|pdf))$/i
+    );
+
+    if (req.method === "GET" && receiptMatch) {
+      if (!requireAdmin(req, res)) return;
+
+      const filename = receiptMatch[1];
+      const receiptPath = path.join(RECEIPTS_DIR, filename);
+      const orders = await readRecords(ORDERS_FILE);
+
+      const receiptBelongsToOrder = orders.some(order =>
+        order.receipt &&
+        order.receipt.filename === filename
+      );
+
+      if (!receiptBelongsToOrder) {
+        return sendJson(res, 404, {
+          error: "Receipt not found."
+        });
+      }
+
+      let contents;
+
+      try {
+        contents = await fs.readFile(receiptPath);
+      } catch {
+        return sendJson(res, 404, {
+          error: "The saved receipt file could not be found."
+        });
+      }
+
+      const extension = path.extname(filename).toLowerCase();
+      const contentType = {
+        ".jpg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+        ".pdf": "application/pdf"
+      }[extension];
+
+      res.writeHead(200, {
+        "Content-Type": contentType,
+        "Content-Disposition":
+          'inline; filename="' + filename + '"',
+        "X-Content-Type-Options": "nosniff",
+        "Cache-Control": "no-store"
+      });
+
+      return res.end(contents);
+    }
+
+    // ---------------- UPDATE ORDER STATUS ----------------
+    const orderStatusMatch = route.match(
+      /^\/api\/admin\/orders\/([a-f0-9-]+)\/status$/i
+    );
+
+    if (req.method === "POST" && orderStatusMatch) {
+      if (!requireAdmin(req, res)) return;
+
+      const body = await readJsonBody(req);
+      const status = cleanText(body.status, 50);
+
+      const allowedStatuses = [
+        "Pending Verification",
+        "Payment Approved",
+        "Payment Rejected"
+      ];
+
+      if (!allowedStatuses.includes(status)) {
+        return sendJson(res, 400, {
+          error: "Invalid order status."
+        });
+      }
+
+      const orders = await readRecords(ORDERS_FILE);
+      const order = orders.find(
+        item => item.id === orderStatusMatch[1]
+      );
+
+      if (!order) {
+        return sendJson(res, 404, {
+          error: "Order not found."
+        });
+      }
+
+      const previousStatus = order.status;
+      const statusChanged = previousStatus !== status;
+
+      order.status = status;
+      order.updatedAt = new Date().toISOString();
+
+      await saveRecords(ORDERS_FILE, orders);
+
+      console.log(
+        "[CleanFlow] Order " + order.id +
+        " status: " + previousStatus + " -> " + status
+      );
+
+      return sendJson(res, 200, {
+        ok: true,
+        message: "Order status updated.",
+        orderId: order.id,
+        status: order.status,
+        previousStatus,
+        statusChanged,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        service: order.service,
+        paymentMethod: order.paymentMethod,
+        updatedAt: order.updatedAt,
+        demo: true
+      });
+    }
+
+    // ---------------- UPDATE REFUND STATUS ----------------
+    const refundStatusMatch = route.match(
+      /^\/api\/admin\/refunds\/([a-f0-9-]+)\/status$/i
+    );
+
+    if (req.method === "POST" && refundStatusMatch) {
+      if (!requireAdmin(req, res)) return;
+
+      const body = await readJsonBody(req);
+      const status = cleanText(body.status, 50);
+
+      const allowedStatuses = [
+        "Refund Pending Review",
+        "Refund Approved",
+        "Refund Rejected"
+      ];
+
+      if (!allowedStatuses.includes(status)) {
+        return sendJson(res, 400, {
+          error: "Invalid refund status."
+        });
+      }
+
+      const refunds = await readRecords(REFUNDS_FILE);
+      const refund = refunds.find(
+        item => item.id === refundStatusMatch[1]
+      );
+
+      if (!refund) {
+        return sendJson(res, 404, {
+          error: "Refund request not found."
+        });
+      }
+
+      const previousStatus = refund.status;
+      const statusChanged = previousStatus !== status;
+
+      refund.status = status;
+      refund.updatedAt = new Date().toISOString();
+
+      await saveRecords(REFUNDS_FILE, refunds);
+
+      console.log(
+        "[CleanFlow] Refund " + refund.id +
+        " status: " + previousStatus + " -> " + status
+      );
+
+      return sendJson(res, 200, {
+        ok: true,
+        message: "Refund status updated.",
+        refundId: refund.id,
+        orderId: refund.orderId,
+        status: refund.status,
+        previousStatus,
+        statusChanged,
+        customerEmail: refund.customerEmail,
+        updatedAt: refund.updatedAt,
+        demo: true
+      });
+    }
+
+    // ---------------- CREATE AN ORDER ----------------
     if (req.method === "POST" && route === "/api/orders") {
       const body = await readJsonBody(req);
 
@@ -249,7 +619,8 @@ const server = http.createServer(async (req, res) => {
         !paymentMethod
       ) {
         return sendJson(res, 400, {
-          error: "Please complete your name, email, service, and payment method."
+          error:
+            "Please complete your name, email, service, and payment method."
         });
       }
 
@@ -276,7 +647,8 @@ const server = http.createServer(async (req, res) => {
         paymentMethod === "Debit Card"
       ) {
         return sendJson(res, 400, {
-          error: "Card processing is not connected. For this demo, choose GCash or Online Bank Transfer."
+          error:
+            "Card processing is not connected. For this demo, choose GCash or Online Bank Transfer."
         });
       }
 
@@ -294,64 +666,36 @@ const server = http.createServer(async (req, res) => {
         notes,
         status: "Pending Verification",
         demo: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: null
       };
-      
-      const orders = await readRecords(ORDERS_FILE);     
+
+      const orders = await readRecords(ORDERS_FILE);
       orders.push(order);
       await saveRecords(ORDERS_FILE, orders);
 
-// Send the customer confirmation.
-await sendResendEmail({
-  to: order.customerEmail,
-  subject: `CleanFlow Order Confirmation - ${order.id}`,
-  html: `
-    <h2>Thank you for choosing CleanFlow Engineering!</h2>
-    <p>Hello ${escapeHtml(order.customerName)},</p>
-    <p>We have received your service order.</p>
-    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
-    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
-    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
-    <p><strong>Status:</strong> Pending Verification</p>
-    <p>This is a demo order. Your payment has not been automatically verified.</p>
-  `
-});
+      console.log(
+        "[CleanFlow] New demo order saved: " + order.id
+      );
 
-// Notify the CleanFlow owner.
-await sendResendEmail({
-  to: ADMIN_EMAIL,
-  subject: `New CleanFlow Order - ${order.id}`,
-  html: `
-    <h2>New CleanFlow Order</h2>
-    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
-    <p><strong>Customer:</strong> ${escapeHtml(order.customerName)}</p>
-    <p><strong>Customer email:</strong> ${escapeHtml(order.customerEmail)}</p>
-    <p><strong>Company:</strong> ${escapeHtml(order.company || "Not provided")}</p>
-    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
-    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
-    <p><strong>Payment reference:</strong> ${escapeHtml(order.paymentReference || "Not provided")}</p>
-    <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
-    <p>This is a demo order. Verify payment separately.</p>
-  `
-});
-
-return sendJson(res, 201, {
-  message: "Demo order saved successfully.",
-  orderId: order.id,
-  status: order.status,
-  demo: true
-});
+      return sendJson(res, 201, {
+        message: "Demo order saved successfully.",
+        orderId: order.id,
+        status: order.status,
+        customerEmail: order.customerEmail,
+        demo: true
+      });
     }
-    // CHECK ORDER STATUS.
-    const orderMatch = route.match(
+
+    // ---------------- CHECK CUSTOMER ORDER STATUS ----------------
+    const customerOrderMatch = route.match(
       /^\/api\/orders\/([a-f0-9-]+)$/i
     );
 
-    if (req.method === "GET" && orderMatch) {
+    if (req.method === "GET" && customerOrderMatch) {
       const orders = await readRecords(ORDERS_FILE);
-
       const order = orders.find(
-        item => item.id === orderMatch[1]
+        item => item.id === customerOrderMatch[1]
       );
 
       if (!order) {
@@ -360,16 +704,10 @@ return sendJson(res, 201, {
         });
       }
 
-      return sendJson(res, 200, {
-        orderId: order.id,
-        service: order.service,
-        status: order.status,
-        createdAt: order.createdAt,
-        demo: true
-      });
+      return sendJson(res, 200, safeOrderForCustomer(order));
     }
 
-    // SUBMIT A REFUND REQUEST.
+    // ---------------- SUBMIT A REFUND REQUEST ----------------
     if (req.method === "POST" && route === "/api/refunds") {
       const body = await readJsonBody(req);
 
@@ -379,7 +717,8 @@ return sendJson(res, 201, {
 
       if (!orderId || !customerEmail || !reason) {
         return sendJson(res, 400, {
-          error: "Please provide your order ID, email, and refund reason."
+          error:
+            "Please provide your order ID, email, and refund reason."
         });
       }
 
@@ -390,10 +729,10 @@ return sendJson(res, 201, {
       }
 
       const orders = await readRecords(ORDERS_FILE);
-
       const order = orders.find(item =>
         item.id === orderId &&
-        item.customerEmail.toLowerCase() === customerEmail.toLowerCase()
+        item.customerEmail.toLowerCase() ===
+          customerEmail.toLowerCase()
       );
 
       if (!order) {
@@ -414,7 +753,8 @@ return sendJson(res, 201, {
 
       if (existingRequest) {
         return sendJson(res, 409, {
-          error: "A refund request for this order is already being reviewed."
+          error:
+            "A refund request for this order is already being reviewed."
         });
       }
 
@@ -425,59 +765,31 @@ return sendJson(res, 201, {
         reason,
         status: "Refund Pending Review",
         demo: true,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        updatedAt: null
       };
 
+      refunds.push(refund);
+      await saveRecords(REFUNDS_FILE, refunds);
 
-refunds.push(refund);
-await saveRecords(REFUNDS_FILE, refunds);
+      console.log(
+        "[CleanFlow] Refund request saved: " + refund.id
+      );
 
-// Confirm receipt of the refund request to the customer.
-await sendResendEmail({
-  to: refund.customerEmail,
-  subject: `CleanFlow Refund Request Received - ${refund.id}`,
-  html: `
-    <h2>Refund Request Received</h2>
-    <p>We have received your refund request.</p>
-    <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
-    <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
-    <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
-    <p><strong>Reason submitted:</strong> ${escapeHtml(refund.reason)}</p>
-    <p>This is only a request for review. It does not mean a refund has been approved or paid.</p>
-  `
-});
-
-// Notify the CleanFlow owner.
-await sendResendEmail({
-  to: ADMIN_EMAIL,
-  subject: `New CleanFlow Refund Request - ${refund.id}`,
-  html: `
-    <h2>New Refund Request</h2>
-    <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
-    <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
-    <p><strong>Customer email:</strong> ${escapeHtml(refund.customerEmail)}</p>
-    <p><strong>Reason:</strong> ${escapeHtml(refund.reason)}</p>
-    <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
-    <p>Please review this demo refund request manually.</p>
-  `
-});
-
-return sendJson(res, 201, {
-  message: "Refund request submitted for demo review.",
-  refundId: refund.id,
-  status: refund.status,
-  demo: true
-});
+      return sendJson(res, 201, {
+        message: "Refund request submitted for demo review.",
+        refundId: refund.id,
+        status: refund.status,
+        demo: true
+      });
     }
-    // SERVE THE WEBSITE FILES.
+
+    // ---------------- SERVE WEBSITE FILES ----------------
     if (req.method === "GET") {
       const requestedPath =
         route === "/" ? "/index.html" : route;
 
-      const filePath = path.resolve(
-        ROOT,
-        "." + requestedPath
-      );
+      const filePath = path.resolve(ROOT, "." + requestedPath);
 
       if (
         !filePath.startsWith(ROOT + path.sep) &&
@@ -495,19 +807,22 @@ return sendJson(res, 201, {
           throw new Error("Not a file");
         }
 
-        const fileContents = await fs.readFile(filePath);
+        const contents = await fs.readFile(filePath);
+        const extension = path.extname(filePath).toLowerCase();
 
         res.writeHead(200, {
           "Content-Type":
-            MIME_TYPES[path.extname(filePath).toLowerCase()] ||
+            MIME_TYPES[extension] ||
             "application/octet-stream",
-          "X-Content-Type-Options": "nosniff"
+          "X-Content-Type-Options": "nosniff",
+          "Cache-Control": "no-store"
         });
 
-        return res.end(fileContents);
+        return res.end(contents);
       } catch {
         return sendJson(res, 404, {
-          error: "File not found. Make sure index.html, styles.css, and script.js are in the same project."
+          error:
+            "File not found. Check that index.html, admin.html, styles.css, and script.js are in the project."
         });
       }
     }
@@ -515,9 +830,8 @@ return sendJson(res, 201, {
     return sendJson(res, 404, {
       error: "Route not found."
     });
-
   } catch (error) {
-    console.error("Request error:", error.message);
+    console.error("[CleanFlow] Request error:", error);
 
     if (!res.headersSent && !res.destroyed) {
       return sendJson(res, 400, {
@@ -531,10 +845,12 @@ initializeStorage()
   .then(() => {
     server.listen(PORT, "0.0.0.0", () => {
       console.log(
-        `CleanFlow demo server running on port ${PORT}.`
+        "CleanFlow demo server running on port " + PORT
       );
+      console.log("Admin demo password: CleanFlowDemo2026!");
+      console.log("Open /admin.html to manage demo orders.");
       console.log(
-        "Open the web preview. Demo only: no real payments or refunds."
+        "Demo only: no real payments or refunds are processed."
       );
     });
   })
