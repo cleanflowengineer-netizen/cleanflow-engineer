@@ -10,6 +10,57 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const REFUNDS_FILE = path.join(DATA_DIR, "refunds.json");
 const PORT = Number(process.env.PORT || 3000);
 
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const ADMIN_EMAIL = "cleanflowengineer@gmail.com";
+
+// Send an email through Resend.
+// Email failures are logged but won't undo a saved order or refund.
+async function sendResendEmail({ to, subject, html }) {
+  if (!RESEND_API_KEY) {
+    console.error("Email not sent: RESEND_API_KEY is missing.");
+    return false;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "CleanFlow Engineering <onboarding@resend.dev>",
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Resend email error:", response.status, result);
+      return false;
+    }
+
+    console.log("Resend email accepted:", result.id);
+    return true;
+  } catch (error) {
+    console.error("Resend request failed:", error.message);
+    return false;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+
 const MAX_REQUEST_SIZE = 6 * 1024 * 1024;
 const MAX_RECEIPT_SIZE = 4 * 1024 * 1024;
 
@@ -246,17 +297,50 @@ const server = http.createServer(async (req, res) => {
         createdAt: new Date().toISOString()
       };
 
-      const orders = await readRecords(ORDERS_FILE);
-      orders.push(order);
-      await saveRecords(ORDERS_FILE, orders);
+     
+orders.push(order);
+await saveRecords(ORDERS_FILE, orders);
 
-      return sendJson(res, 201, {
-        message: "Demo order saved successfully.",
-        orderId: order.id,
-        status: order.status,
-        demo: true
-      });
-    }
+// Send the customer confirmation.
+await sendResendEmail({
+  to: order.customerEmail,
+  subject: `CleanFlow Order Confirmation - ${order.id}`,
+  html: `
+    <h2>Thank you for choosing CleanFlow Engineering!</h2>
+    <p>Hello ${escapeHtml(order.customerName)},</p>
+    <p>We have received your service order.</p>
+    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
+    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
+    <p><strong>Status:</strong> Pending Verification</p>
+    <p>This is a demo order. Your payment has not been automatically verified.</p>
+  `
+});
+
+// Notify the CleanFlow owner.
+await sendResendEmail({
+  to: ADMIN_EMAIL,
+  subject: `New CleanFlow Order - ${order.id}`,
+  html: `
+    <h2>New CleanFlow Order</h2>
+    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+    <p><strong>Customer:</strong> ${escapeHtml(order.customerName)}</p>
+    <p><strong>Customer email:</strong> ${escapeHtml(order.customerEmail)}</p>
+    <p><strong>Company:</strong> ${escapeHtml(order.company || "Not provided")}</p>
+    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
+    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
+    <p><strong>Payment reference:</strong> ${escapeHtml(order.paymentReference || "Not provided")}</p>
+    <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
+    <p>This is a demo order. Verify payment separately.</p>
+  `
+});
+
+return sendJson(res, 201, {
+  message: "Demo order saved successfully.",
+  orderId: order.id,
+  status: order.status,
+  demo: true
+});
 
     // CHECK ORDER STATUS.
     const orderMatch = route.match(
@@ -344,16 +428,46 @@ const server = http.createServer(async (req, res) => {
         createdAt: new Date().toISOString()
       };
 
-      refunds.push(refund);
-      await saveRecords(REFUNDS_FILE, refunds);
 
-      return sendJson(res, 201, {
-        message: "Refund request submitted for demo review.",
-        refundId: refund.id,
-        status: refund.status,
-        demo: true
-      });
-    }
+refunds.push(refund);
+await saveRecords(REFUNDS_FILE, refunds);
+
+// Confirm receipt of the refund request to the customer.
+await sendResendEmail({
+  to: refund.customerEmail,
+  subject: `CleanFlow Refund Request Received - ${refund.id}`,
+  html: `
+    <h2>Refund Request Received</h2>
+    <p>We have received your refund request.</p>
+    <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
+    <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
+    <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
+    <p><strong>Reason submitted:</strong> ${escapeHtml(refund.reason)}</p>
+    <p>This is only a request for review. It does not mean a refund has been approved or paid.</p>
+  `
+});
+
+// Notify the CleanFlow owner.
+await sendResendEmail({
+  to: ADMIN_EMAIL,
+  subject: `New CleanFlow Refund Request - ${refund.id}`,
+  html: `
+    <h2>New Refund Request</h2>
+    <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
+    <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
+    <p><strong>Customer email:</strong> ${escapeHtml(refund.customerEmail)}</p>
+    <p><strong>Reason:</strong> ${escapeHtml(refund.reason)}</p>
+    <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
+    <p>Please review this demo refund request manually.</p>
+  `
+});
+
+return sendJson(res, 201, {
+  message: "Refund request submitted for demo review.",
+  refundId: refund.id,
+  status: refund.status,
+  demo: true
+});
 
     // SERVE THE WEBSITE FILES.
     if (req.method === "GET") {
