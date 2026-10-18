@@ -2,7 +2,6 @@ const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const nodemailer = require("nodemailer");
 
 const ROOT = __dirname;
 const DATA_DIR = path.join(ROOT, "payment-data");
@@ -11,9 +10,56 @@ const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const REFUNDS_FILE = path.join(DATA_DIR, "refunds.json");
 const PORT = Number(process.env.PORT || 3000);
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = process.env.GMAIL_APP_PASSWORD;
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "cleanflowengineering@gmail.com";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const ADMIN_EMAIL = "cleanflowengineer@gmail.com";
+
+// Send an email through Resend.
+// Email failures are logged but won't undo a saved order or refund.
+async function sendResendEmail({ to, subject, html }) {
+  if (!RESEND_API_KEY) {
+    console.error("Email not sent: RESEND_API_KEY is missing.");
+    return false;
+  }
+
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: "CleanFlow Engineering <onboarding@resend.dev>",
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error("Resend email error:", response.status, result);
+      return false;
+    }
+
+    console.log("Resend email accepted:", result.id);
+    return true;
+  } catch (error) {
+    console.error("Resend request failed:", error.message);
+    return false;
+  }
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
 
 const MAX_REQUEST_SIZE = 6 * 1024 * 1024;
 const MAX_RECEIPT_SIZE = 4 * 1024 * 1024;
@@ -50,67 +96,6 @@ const MIME_TYPES = {
   ".ico": "image/x-icon"
 };
 
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, character => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[character]);
-}
-
-function cleanText(value, maxLength = 1000) {
-  return typeof value === "string"
-    ? value.trim().slice(0, maxLength)
-    : "";
-}
-
-function validEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function sendJson(res, statusCode, data) {
-  res.writeHead(statusCode, {
-    "Content-Type": "application/json; charset=utf-8",
-    "Cache-Control": "no-store"
-  });
-  res.end(JSON.stringify(data));
-}
-
-
-async function sendEmail({ to, subject, html }) {
-  if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-    console.error(
-      "Email not sent: GMAIL_USER or GMAIL_APP_PASSWORD is missing."
-    );
-    return false;
-  }
-
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: GMAIL_USER,
-      pass: GMAIL_APP_PASSWORD
-    }
-  });
-
-  try {
-    const info = await transporter.sendMail({
-      from: `"CleanFlow Engineering" <${GMAIL_USER}>`,
-      to,
-      subject,
-      html
-    });
-
-    console.log(`Gmail email sent to ${to}:`, info.messageId);
-    return true;
-  } catch (error) {
-    console.error(`Gmail email failed for ${to}:`, error.message);
-    return false;
-  }
-}
-
 async function ensureJsonFile(file) {
   try {
     await fs.access(file);
@@ -140,9 +125,27 @@ async function saveRecords(file, records) {
   await fs.rename(temporaryFile, file);
 }
 
+function sendJson(res, statusCode, data) {
+  res.writeHead(statusCode, {
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
+  res.end(JSON.stringify(data));
+}
+
+function cleanText(value, maxLength = 1000) {
+  return typeof value === "string"
+    ? value.trim().slice(0, maxLength)
+    : "";
+}
+
+function validEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
-    const chunks = [];
+    let chunks = [];
     let totalSize = 0;
 
     req.on("data", chunk => {
@@ -159,7 +162,8 @@ function readJsonBody(req) {
 
     req.on("end", () => {
       try {
-        resolve(JSON.parse(Buffer.concat(chunks).toString("utf8") || "{}"));
+        const content = Buffer.concat(chunks).toString("utf8");
+        resolve(JSON.parse(content || "{}"));
       } catch {
         reject(new Error("Invalid request data."));
       }
@@ -191,7 +195,8 @@ async function saveReceipt(receipt) {
     throw new Error("Receipt must be smaller than 4 MB.");
   }
 
-  const filename = crypto.randomUUID() + RECEIPT_TYPES[contentType];
+  const filename =
+    crypto.randomUUID() + RECEIPT_TYPES[contentType];
 
   await fs.writeFile(
     path.join(RECEIPTS_DIR, filename),
@@ -207,117 +212,16 @@ async function saveReceipt(receipt) {
   };
 }
 
-async function notifyOrder(order) {
-  const notes = order.notes || "No additional instructions provided.";
-
-  const customerEmailSent = await sendEmail({
-    to: order.customerEmail,
-    subject: `CleanFlow Engineering - Order Confirmation - ${order.id}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;max-width:650px;margin:auto;color:#222;line-height:1.6">
-        <h2 style="color:#087db5">CLEANFLOW ENGINEERING</h2>
-        <p><strong>ORDER CONFIRMATION</strong></p>
-        <p>Hello ${escapeHtml(order.customerName)},</p>
-        <p>Thank you for choosing CleanFlow Engineering. We have received your service order.</p>
-        <h3>ORDER DETAILS</h3>
-        <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
-        <p><strong>Customer Name:</strong> ${escapeHtml(order.customerName)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(order.customerEmail)}</p>
-        <p><strong>Company / Organization:</strong> ${escapeHtml(order.company || "Not provided")}</p>
-        <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
-        <p><strong>Payment Method:</strong> ${escapeHtml(order.paymentMethod)}</p>
-        <p><strong>Payment Reference:</strong> ${escapeHtml(order.paymentReference || "Not provided")}</p>
-        <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
-        <h3>MESSAGE / ADDITIONAL INSTRUCTIONS</h3>
-        <div style="padding:12px;background:#f1f7fb;border-left:4px solid #087db5;white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(notes)}</div>
-        <h3>PAYMENT VERIFICATION NOTICE</h3>
-        <p>Your order has been recorded. Your payment is awaiting manual verification. The administrator must check your transaction and uploaded receipt before confirming payment.</p>
-        <p>Please keep your Order ID for future inquiries or refund requests.</p>
-        <hr>
-        <p style="font-size:12px;color:#666">School project demo only. This email does not confirm payment verification or a refund.</p>
-        <p>CleanFlow Engineering</p>
-      </div>
-    `
-  });
-
-  const ownerEmailSent = await sendEmail({
-    to: ADMIN_EMAIL,
-    subject: `New CleanFlow Order - ${order.id}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6">
-        <h2>New CleanFlow Order</h2>
-        <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
-        <p><strong>Customer:</strong> ${escapeHtml(order.customerName)}</p>
-        <p><strong>Customer email:</strong> ${escapeHtml(order.customerEmail)}</p>
-        <p><strong>Company:</strong> ${escapeHtml(order.company || "Not provided")}</p>
-        <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
-        <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
-        <p><strong>Payment reference:</strong> ${escapeHtml(order.paymentReference || "Not provided")}</p>
-        <h3>Additional Instructions</h3>
-        <div style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(notes)}</div>
-        <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
-        <p>This is a demo order. Verify payment separately.</p>
-      </div>
-    `
-  });
-
-  console.log("Order email results:", {
-    orderId: order.id,
-    customerEmailSent,
-    ownerEmailSent
-  });
-}
-
-async function notifyRefund(refund) {
-  const customerEmailSent = await sendEmail({
-    to: refund.customerEmail,
-    subject: `CleanFlow Refund Request Received - ${refund.id}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6">
-        <h2>Refund Request Received</h2>
-        <p>We have received your refund request.</p>
-        <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
-        <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
-        <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
-        <p><strong>Reason submitted:</strong></p>
-        <div style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(refund.reason)}</div>
-        <p>This is only a request for review. It does not mean a refund has been approved or paid.</p>
-      </div>
-    `
-  });
-
-  const ownerEmailSent = await sendEmail({
-    to: ADMIN_EMAIL,
-    subject: `New CleanFlow Refund Request - ${refund.id}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6">
-        <h2>New Refund Request</h2>
-        <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
-        <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
-        <p><strong>Customer email:</strong> ${escapeHtml(refund.customerEmail)}</p>
-        <p><strong>Reason:</strong></p>
-        <div style="white-space:pre-wrap;overflow-wrap:anywhere">${escapeHtml(refund.reason)}</div>
-        <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
-        <p>Please review this demo refund request manually.</p>
-      </div>
-    `
-  });
-
-  console.log("Refund email results:", {
-    refundId: refund.id,
-    customerEmailSent,
-    ownerEmailSent
-  });
-}
-
 const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(
       req.url,
       `http://${req.headers.host || "localhost"}`
     );
+
     const route = decodeURIComponent(url.pathname);
 
+    // Check whether the demo server is running.
     if (req.method === "GET" && route === "/api/health") {
       return sendJson(res, 200, {
         ok: true,
@@ -326,7 +230,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // CREATE ORDER
+    // CREATE AN ORDER.
     if (req.method === "POST" && route === "/api/orders") {
       const body = await readJsonBody(req);
 
@@ -338,7 +242,12 @@ const server = http.createServer(async (req, res) => {
       const paymentReference = cleanText(body.paymentReference, 100);
       const notes = cleanText(body.notes, 1000);
 
-      if (!customerName || !customerEmail || !service || !paymentMethod) {
+      if (
+        !customerName ||
+        !customerEmail ||
+        !service ||
+        !paymentMethod
+      ) {
         return sendJson(res, 400, {
           error: "Please complete your name, email, service, and payment method."
         });
@@ -362,9 +271,12 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      if (["Credit Card", "Debit Card"].includes(paymentMethod)) {
+      if (
+        paymentMethod === "Credit Card" ||
+        paymentMethod === "Debit Card"
+      ) {
         return sendJson(res, 400, {
-          error: "Card processing is not connected. Choose GCash or Online Bank Transfer."
+          error: "Card processing is not connected. For this demo, choose GCash or Online Bank Transfer."
         });
       }
 
@@ -384,31 +296,68 @@ const server = http.createServer(async (req, res) => {
         demo: true,
         createdAt: new Date().toISOString()
       };
-
-      const orders = await readRecords(ORDERS_FILE);
+      
+      const orders = await readRecords(ORDERS_FILE);     
       orders.push(order);
       await saveRecords(ORDERS_FILE, orders);
 
-      // Email failures do not undo the saved order.
-      await notifyOrder(order);
+// Send the customer confirmation.
+await sendResendEmail({
+  to: order.customerEmail,
+  subject: `CleanFlow Order Confirmation - ${order.id}`,
+  html: `
+    <h2>Thank you for choosing CleanFlow Engineering!</h2>
+    <p>Hello ${escapeHtml(order.customerName)},</p>
+    <p>We have received your service order.</p>
+    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
+    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
+    <p><strong>Status:</strong> Pending Verification</p>
+    <p>This is a demo order. Your payment has not been automatically verified.</p>
+  `
+});
 
-      return sendJson(res, 201, {
-        message: "Demo order saved successfully.",
-        orderId: order.id,
-        status: order.status,
-        demo: true
-      });
+// Notify the CleanFlow owner.
+await sendResendEmail({
+  to: ADMIN_EMAIL,
+  subject: `New CleanFlow Order - ${order.id}`,
+  html: `
+    <h2>New CleanFlow Order</h2>
+    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+    <p><strong>Customer:</strong> ${escapeHtml(order.customerName)}</p>
+    <p><strong>Customer email:</strong> ${escapeHtml(order.customerEmail)}</p>
+    <p><strong>Company:</strong> ${escapeHtml(order.company || "Not provided")}</p>
+    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
+    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
+    <p><strong>Payment reference:</strong> ${escapeHtml(order.paymentReference || "Not provided")}</p>
+    <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
+    <p>This is a demo order. Verify payment separately.</p>
+  `
+});
+
+return sendJson(res, 201, {
+  message: "Demo order saved successfully.",
+  orderId: order.id,
+  status: order.status,
+  demo: true
+});
     }
-
-    // CHECK ORDER STATUS
-    const orderMatch = route.match(/^\/api\/orders\/([a-f0-9-]+)$/i);
+    // CHECK ORDER STATUS.
+    const orderMatch = route.match(
+      /^\/api\/orders\/([a-f0-9-]+)$/i
+    );
 
     if (req.method === "GET" && orderMatch) {
       const orders = await readRecords(ORDERS_FILE);
-      const order = orders.find(item => item.id === orderMatch[1]);
+
+      const order = orders.find(
+        item => item.id === orderMatch[1]
+      );
 
       if (!order) {
-        return sendJson(res, 404, { error: "Order not found." });
+        return sendJson(res, 404, {
+          error: "Order not found."
+        });
       }
 
       return sendJson(res, 200, {
@@ -420,7 +369,7 @@ const server = http.createServer(async (req, res) => {
       });
     }
 
-    // SUBMIT REFUND REQUEST
+    // SUBMIT A REFUND REQUEST.
     if (req.method === "POST" && route === "/api/refunds") {
       const body = await readJsonBody(req);
 
@@ -441,6 +390,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const orders = await readRecords(ORDERS_FILE);
+
       const order = orders.find(item =>
         item.id === orderId &&
         item.customerEmail.toLowerCase() === customerEmail.toLowerCase()
@@ -453,9 +403,13 @@ const server = http.createServer(async (req, res) => {
       }
 
       const refunds = await readRecords(REFUNDS_FILE);
+
       const existingRequest = refunds.find(item =>
         item.orderId === orderId &&
-        ["Refund Pending Review", "Refund Approved"].includes(item.status)
+        [
+          "Refund Pending Review",
+          "Refund Approved"
+        ].includes(item.status)
       );
 
       if (existingRequest) {
@@ -474,35 +428,72 @@ const server = http.createServer(async (req, res) => {
         createdAt: new Date().toISOString()
       };
 
-      refunds.push(refund);
-      await saveRecords(REFUNDS_FILE, refunds);
 
-      // Email failures do not undo the saved refund request.
-      await notifyRefund(refund);
+refunds.push(refund);
+await saveRecords(REFUNDS_FILE, refunds);
 
-      return sendJson(res, 201, {
-        message: "Refund request submitted for demo review.",
-        refundId: refund.id,
-        status: refund.status,
-        demo: true
-      });
+// Confirm receipt of the refund request to the customer.
+await sendResendEmail({
+  to: refund.customerEmail,
+  subject: `CleanFlow Refund Request Received - ${refund.id}`,
+  html: `
+    <h2>Refund Request Received</h2>
+    <p>We have received your refund request.</p>
+    <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
+    <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
+    <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
+    <p><strong>Reason submitted:</strong> ${escapeHtml(refund.reason)}</p>
+    <p>This is only a request for review. It does not mean a refund has been approved or paid.</p>
+  `
+});
+
+// Notify the CleanFlow owner.
+await sendResendEmail({
+  to: ADMIN_EMAIL,
+  subject: `New CleanFlow Refund Request - ${refund.id}`,
+  html: `
+    <h2>New Refund Request</h2>
+    <p><strong>Refund reference:</strong> ${escapeHtml(refund.id)}</p>
+    <p><strong>Order ID:</strong> ${escapeHtml(refund.orderId)}</p>
+    <p><strong>Customer email:</strong> ${escapeHtml(refund.customerEmail)}</p>
+    <p><strong>Reason:</strong> ${escapeHtml(refund.reason)}</p>
+    <p><strong>Status:</strong> ${escapeHtml(refund.status)}</p>
+    <p>Please review this demo refund request manually.</p>
+  `
+});
+
+return sendJson(res, 201, {
+  message: "Refund request submitted for demo review.",
+  refundId: refund.id,
+  status: refund.status,
+  demo: true
+});
     }
-
-    // SERVE WEBSITE FILES
+    // SERVE THE WEBSITE FILES.
     if (req.method === "GET") {
-      const requestedPath = route === "/" ? "/index.html" : route;
-      const filePath = path.resolve(ROOT, "." + requestedPath);
+      const requestedPath =
+        route === "/" ? "/index.html" : route;
+
+      const filePath = path.resolve(
+        ROOT,
+        "." + requestedPath
+      );
 
       if (
         !filePath.startsWith(ROOT + path.sep) &&
         filePath !== path.join(ROOT, "index.html")
       ) {
-        return sendJson(res, 403, { error: "Access denied." });
+        return sendJson(res, 403, {
+          error: "Access denied."
+        });
       }
 
       try {
         const stats = await fs.stat(filePath);
-        if (!stats.isFile()) throw new Error("Not a file");
+
+        if (!stats.isFile()) {
+          throw new Error("Not a file");
+        }
 
         const fileContents = await fs.readFile(filePath);
 
@@ -516,12 +507,14 @@ const server = http.createServer(async (req, res) => {
         return res.end(fileContents);
       } catch {
         return sendJson(res, 404, {
-          error: "File not found. Ensure index.html, styles.css, and script.js are in the project."
+          error: "File not found. Make sure index.html, styles.css, and script.js are in the same project."
         });
       }
     }
 
-    return sendJson(res, 404, { error: "Route not found." });
+    return sendJson(res, 404, {
+      error: "Route not found."
+    });
 
   } catch (error) {
     console.error("Request error:", error.message);
@@ -537,14 +530,12 @@ const server = http.createServer(async (req, res) => {
 initializeStorage()
   .then(() => {
     server.listen(PORT, "0.0.0.0", () => {
-      console.log(`CleanFlow demo server running on port ${PORT}.`);
-      console.log("Demo only: no real payments or refunds.");
       console.log(
-  "Email sender configured:",
-  GMAIL_USER && GMAIL_APP_PASSWORD
-    ? "yes"
-    : "no - set GMAIL_USER and GMAIL_APP_PASSWORD in Render"
-);
+        `CleanFlow demo server running on port ${PORT}.`
+      );
+      console.log(
+        "Open the web preview. Demo only: no real payments or refunds."
+      );
     });
   })
   .catch(error => {
