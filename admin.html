@@ -1,0 +1,838 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CleanFlow Admin Dashboard</title>
+
+  <style>
+    :root {
+      --navy: #12304a;
+      --blue: #176b87;
+      --teal: #159b91;
+      --bg: #f3f7fa;
+      --text: #263746;
+      --muted: #657786;
+      --border: #dce5eb;
+      --green: #16845b;
+      --red: #bd3d43;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    header {
+      padding: 22px 5%;
+      background: var(--navy);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    header h1 { margin: 0; font-size: 23px; }
+    header p { margin: 6px 0 0; color: #d5e7f0; font-size: 13px; }
+
+    main {
+      width: min(1200px, 94%);
+      margin: 28px auto;
+    }
+
+    .panel {
+      background: white;
+      padding: 23px;
+      border-radius: 14px;
+      margin-bottom: 22px;
+      border: 1px solid var(--border);
+      box-shadow: 0 5px 20px #12304a0a;
+    }
+
+    h2 { color: var(--navy); margin-top: 0; }
+    .muted { color: var(--muted); font-size: 14px; }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 12px 0 6px;
+    }
+
+    input, select, textarea {
+      font: inherit;
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #cbd8e0;
+      border-radius: 7px;
+      background: white;
+    }
+
+    button, .link-button {
+      border: 0;
+      border-radius: 7px;
+      padding: 10px 13px;
+      background: var(--blue);
+      color: white;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    button:hover, .link-button:hover { opacity: .9; }
+    button:disabled { opacity: .5; cursor: wait; }
+    .secondary { background: #647789; }
+    .approve { background: var(--green); }
+    .reject { background: var(--red); }
+
+    .login-box {
+      max-width: 440px;
+      margin: 65px auto;
+    }
+
+    .notice {
+      padding: 12px;
+      border-radius: 7px;
+      background: #eef7fa;
+      color: var(--navy);
+      font-size: 14px;
+      margin-bottom: 15px;
+      line-height: 1.5;
+    }
+
+    .message {
+      margin-top: 13px;
+      font-size: 14px;
+      white-space: pre-line;
+      line-height: 1.5;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 13px;
+      margin-bottom: 22px;
+    }
+
+    .stat {
+      background: white;
+      padding: 18px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 9px;
+      font-size: 26px;
+      color: var(--navy);
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      text-align: left;
+      vertical-align: top;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+
+    th { background: #f4f8fa; color: var(--navy); }
+    td select { min-width: 175px; margin-bottom: 7px; }
+
+    .status {
+      display: inline-block;
+      padding: 5px 8px;
+      border-radius: 20px;
+      background: #fff1d6;
+      color: #815b0a;
+      font-size: 12px;
+      margin-bottom: 7px;
+    }
+
+    .status.approved { background: #e1f7eb; color: #146b45; }
+    .status.rejected { background: #fde8e8; color: #a32832; }
+
+    .row-actions { min-width: 195px; }
+    .row-actions button { margin: 3px 3px 3px 0; }
+    .hidden { display: none !important; }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    @media (max-width: 650px) {
+      .stats { grid-template-columns: 1fr; }
+      .panel { padding: 15px; }
+      header h1 { font-size: 20px; }
+    }
+  </style>
+</head>
+
+<body>
+<header>
+  <div>
+    <h1>CleanFlow Engineering</h1>
+    <p>Admin Order &amp; Refund Dashboard · School Project Demo</p>
+  </div>
+  <button id="logoutButton" class="secondary hidden" type="button">
+    Log Out
+  </button>
+</header>
+
+<main>
+  <section id="loginSection" class="panel login-box">
+    <h2>Administrator Login</h2>
+    <p class="muted">Sign in to review demo orders, receipts, and refund requests.</p>
+
+    <div class="notice">
+      This is a school-project demo. Updating a payment status does not verify a
+      bank transaction. Approving a refund does not transfer money.
+    </div>
+
+    <form id="loginForm">
+      <label for="adminPassword">Admin password</label>
+      <input
+        id="adminPassword"
+        type="password"
+        autocomplete="current-password"
+        required
+      >
+      <button id="loginButton" type="submit" style="width:100%;margin-top:15px">
+        Log In
+      </button>
+    </form>
+
+    <p id="loginMessage" class="message" role="status"></p>
+  </section>
+
+  <section id="dashboardSection" class="hidden">
+    <div class="stats">
+      <div class="stat">
+        <span>Total orders</span>
+        <strong id="totalOrders">0</strong>
+      </div>
+      <div class="stat">
+        <span>Pending verification</span>
+        <strong id="pendingOrders">0</strong>
+      </div>
+      <div class="stat">
+        <span>Refund requests</span>
+        <strong id="totalRefunds">0</strong>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>Customer Orders</h2>
+      <p class="muted">
+        Review each order and receipt. When you save a changed status, the page
+        will attempt to notify the customer by email.
+      </p>
+
+      <button id="refreshOrdersButton" type="button">Refresh Orders</button>
+      <p id="ordersMessage" class="message" role="status"></p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Order / Date</th>
+              <th>Customer</th>
+              <th>Service</th>
+              <th>Payment / Receipt</th>
+              <th>Status / Action</th>
+            </tr>
+          </thead>
+          <tbody id="ordersTable">
+            <tr><td colspan="5">Loading orders...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Refund Requests</h2>
+      <p class="muted">
+        Save a refund status to record your review and attempt to email the
+        customer. This does not issue an actual refund.
+      </p>
+
+      <button id="refreshRefundsButton" type="button">Refresh Refunds</button>
+      <p id="refundsMessage" class="message" role="status"></p>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Refund / Date</th>
+              <th>Order ID</th>
+              <th>Customer Email</th>
+              <th>Reason</th>
+              <th>Status / Action</th>
+            </tr>
+          </thead>
+          <tbody id="refundsTable">
+            <tr><td colspan="5">Loading refund requests...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+</main>
+
+<footer>
+  CleanFlow Engineering · Demo only · No real payments or refunds are processed
+</footer>
+
+<!-- Load EmailJS before the dashboard code. -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+"use strict";
+
+/*
+  EMAILJS CONFIGURATION
+  Uses the configuration from the CleanFlow project.
+*/
+const EMAILJS_PUBLIC_KEY = "zTVG7TfT8a3f7C28r";
+const EMAILJS_SERVICE_ID = "service_ndmbg2r";
+const EMAILJS_ADMIN_TEMPLATE_ID = "template_yzzz0ms";
+const EMAILJS_CUSTOMER_TEMPLATE_ID = "template_sl7hzru";
+const ADMIN_EMAIL = "cleanflowengineer@gmail.com";
+
+const loginSection = document.getElementById("loginSection");
+const dashboardSection = document.getElementById("dashboardSection");
+const loginForm = document.getElementById("loginForm");
+const loginMessage = document.getElementById("loginMessage");
+const logoutButton = document.getElementById("logoutButton");
+
+let emailJsReady = false;
+
+if (window.emailjs) {
+  try {
+    emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    emailJsReady = true;
+  } catch (error) {
+    console.error("EmailJS initialization failed:", error);
+  }
+}
+
+function makeElement(tag, text, className) {
+  const element = document.createElement(tag);
+
+  if (text !== undefined && text !== null) {
+    element.textContent = String(text);
+  }
+
+  if (className) element.className = className;
+
+  return element;
+}
+
+function showMessage(element, message, success = true) {
+  element.textContent = message;
+  element.style.color = success ? "#167447" : "#b42318";
+}
+
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    cache: "no-store",
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {})
+    }
+  });
+
+  const text = await response.text();
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      "Unexpected server response. Check server.js and the requested API route."
+    );
+  }
+
+  if (!response.ok) {
+    if (response.status === 401) showLogin();
+    throw new Error(data.error || "Request failed.");
+  }
+
+  return data;
+}
+
+function showLogin() {
+  loginSection.classList.remove("hidden");
+  dashboardSection.classList.add("hidden");
+  logoutButton.classList.add("hidden");
+}
+
+function showDashboard() {
+  loginSection.classList.add("hidden");
+  dashboardSection.classList.remove("hidden");
+  logoutButton.classList.remove("hidden");
+}
+
+function formattedDate(value) {
+  if (!value) return "Unknown date";
+
+  const date = new Date(value);
+
+  return Number.isNaN(date.getTime())
+    ? "Unknown date"
+    : date.toLocaleString();
+}
+
+function statusClass(status) {
+  if (status === "Payment Approved" || status === "Refund Approved") {
+    return "status approved";
+  }
+
+  if (status === "Payment Rejected" || status === "Refund Rejected") {
+    return "status rejected";
+  }
+
+  return "status";
+}
+
+function addStatusLabel(cell, status) {
+  cell.appendChild(makeElement("span", status, statusClass(status)));
+}
+
+/*
+  Send a customer status email.
+  The email is attempted only after the backend confirms that the
+  status update was saved successfully.
+*/
+async function sendCustomerStatusEmail({
+  email,
+  customerName,
+  orderId,
+  service,
+  status,
+  kind
+}) {
+  if (!emailJsReady || !window.emailjs) {
+    throw new Error(
+      "EmailJS is not available. Check your internet connection and EmailJS SDK."
+    );
+  }
+
+  const isRefund = kind === "refund";
+
+  const parameters = {
+    to_email: email,
+    customer_email: email,
+    to_name: customerName || "Customer",
+    customer_name: customerName || "Customer",
+    order_id: orderId,
+    service_name: service || "CleanFlow Engineering service",
+    status: status,
+    payment_status: status,
+    refund_status: status,
+    notification_type: isRefund ? "Refund status update" : "Payment status update",
+    admin_email: ADMIN_EMAIL,
+    message: isRefund
+      ? "Your CleanFlow refund request status has been updated to: " + status +
+        ". This is a school-project demo. No money is transferred automatically."
+      : "Your CleanFlow order payment status has been updated to: " + status +
+        ". This is a school-project demo."
+  };
+
+  const result = await emailjs.send(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_CUSTOMER_TEMPLATE_ID,
+    parameters
+  );
+
+  return result;
+}
+
+async function loadOrders() {
+  const table = document.getElementById("ordersTable");
+  const message = document.getElementById("ordersMessage");
+
+  try {
+    const data = await api("/api/admin/orders");
+    table.replaceChildren();
+
+    document.getElementById("totalOrders").textContent =
+      data.orders.length;
+
+    document.getElementById("pendingOrders").textContent =
+      data.orders.filter(order =>
+        order.status === "Pending Verification"
+      ).length;
+
+    if (!data.orders.length) {
+      const row = makeElement("tr");
+      const cell = makeElement("td", "No orders have been submitted yet.");
+      cell.colSpan = 5;
+      row.appendChild(cell);
+      table.appendChild(row);
+      showMessage(message, "No orders found.");
+      return;
+    }
+
+    for (const order of data.orders) {
+      const row = makeElement("tr");
+
+      const idCell = makeElement("td");
+      idCell.appendChild(makeElement("strong", order.id));
+      idCell.appendChild(
+        makeElement("div", formattedDate(order.createdAt), "muted")
+      );
+      row.appendChild(idCell);
+
+      const customerCell = makeElement("td");
+      customerCell.appendChild(makeElement("strong", order.customerName));
+      customerCell.appendChild(makeElement("div", order.customerEmail));
+
+      if (order.company) {
+        customerCell.appendChild(makeElement("div", order.company, "muted"));
+      }
+
+      row.appendChild(customerCell);
+
+      const serviceCell = makeElement("td");
+      serviceCell.appendChild(makeElement("strong", order.service));
+
+      if (order.notes) {
+        serviceCell.appendChild(makeElement("p", order.notes, "muted"));
+      }
+
+      row.appendChild(serviceCell);
+
+      const paymentCell = makeElement("td");
+      paymentCell.appendChild(makeElement("div", order.paymentMethod));
+
+      if (order.paymentReference) {
+        paymentCell.appendChild(
+          makeElement("div", "Reference: " + order.paymentReference)
+        );
+      }
+
+      if (order.receipt && order.receipt.url) {
+        const receiptLink = makeElement(
+          "a",
+          "View receipt" + (
+            order.receipt.originalName
+              ? " (" + order.receipt.originalName + ")"
+              : ""
+          ),
+          "link-button"
+        );
+
+        receiptLink.href = order.receipt.url;
+        receiptLink.target = "_blank";
+        receiptLink.rel = "noopener noreferrer";
+        receiptLink.style.marginTop = "8px";
+        paymentCell.appendChild(receiptLink);
+      } else {
+        paymentCell.appendChild(
+          makeElement("p", "No receipt uploaded.", "muted")
+        );
+      }
+
+      row.appendChild(paymentCell);
+
+      const actionCell = makeElement("td", null, "row-actions");
+      addStatusLabel(actionCell, order.status);
+
+      const select = makeElement("select");
+      select.setAttribute("aria-label", "Status for order " + order.id);
+
+      for (const status of [
+        "Pending Verification",
+        "Payment Approved",
+        "Payment Rejected"
+      ]) {
+        const option = makeElement("option", status);
+        option.value = status;
+        option.selected = status === order.status;
+        select.appendChild(option);
+      }
+
+      actionCell.appendChild(select);
+
+      const saveButton = makeElement("button", "Save Status", "approve");
+      saveButton.type = "button";
+
+      saveButton.addEventListener("click", async () => {
+        const newStatus = select.value;
+        const oldStatus = order.status;
+
+        if (newStatus === oldStatus) {
+          showMessage(message, "No status change was made.");
+          return;
+        }
+
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
+
+        try {
+          // Save the status on the server first.
+          await api(
+            "/api/admin/orders/" + encodeURIComponent(order.id) + "/status",
+            {
+              method: "POST",
+              body: JSON.stringify({ status: newStatus })
+            }
+          );
+
+          // Then send one customer notification for this status change.
+          try {
+            await sendCustomerStatusEmail({
+              email: order.customerEmail,
+              customerName: order.customerName,
+              orderId: order.id,
+              service: order.service,
+              status: newStatus,
+              kind: "order"
+            });
+
+            showMessage(
+              message,
+              "Order status saved. Customer notification accepted by EmailJS."
+            );
+          } catch (emailError) {
+            console.error("Customer payment-status email failed:", emailError);
+
+            showMessage(
+              message,
+              "Order status saved, but the customer email failed: " +
+                emailError.message,
+              false
+            );
+          }
+
+          await loadOrders();
+        } catch (error) {
+          showMessage(message, error.message, false);
+        } finally {
+          saveButton.disabled = false;
+          saveButton.textContent = "Save Status";
+        }
+      });
+
+      actionCell.appendChild(saveButton);
+      row.appendChild(actionCell);
+      table.appendChild(row);
+    }
+
+    showMessage(message, "Orders loaded successfully.");
+  } catch (error) {
+    showMessage(message, error.message, false);
+  }
+}
+
+async function loadRefunds() {
+  const table = document.getElementById("refundsTable");
+  const message = document.getElementById("refundsMessage");
+
+  try {
+    const data = await api("/api/admin/refunds");
+    table.replaceChildren();
+
+    document.getElementById("totalRefunds").textContent =
+      data.refunds.length;
+
+    if (!data.refunds.length) {
+      const row = makeElement("tr");
+      const cell = makeElement("td", "No refund requests have been submitted.");
+      cell.colSpan = 5;
+      row.appendChild(cell);
+      table.appendChild(row);
+      showMessage(message, "No refund requests found.");
+      return;
+    }
+
+    for (const refund of data.refunds) {
+      const row = makeElement("tr");
+
+      const idCell = makeElement("td");
+      idCell.appendChild(makeElement("strong", refund.id));
+      idCell.appendChild(
+        makeElement("div", formattedDate(refund.createdAt), "muted")
+      );
+      row.appendChild(idCell);
+
+      row.appendChild(makeElement("td", refund.orderId));
+      row.appendChild(makeElement("td", refund.customerEmail));
+      row.appendChild(makeElement("td", refund.reason));
+
+      const actionCell = makeElement("td", null, "row-actions");
+      addStatusLabel(actionCell, refund.status);
+
+      const select = makeElement("select");
+      select.setAttribute("aria-label", "Status for refund " + refund.id);
+
+      for (const status of [
+        "Refund Pending Review",
+        "Refund Approved",
+        "Refund Rejected"
+      ]) {
+        const option = makeElement("option", status);
+        option.value = status;
+        option.selected = status === refund.status;
+        select.appendChild(option);
+      }
+
+      actionCell.appendChild(select);
+
+      const saveButton = makeElement("button", "Save Status", "approve");
+      saveButton.type = "button";
+
+      saveButton.addEventListener("click", async () => {
+        const newStatus = select.value;
+        const oldStatus = refund.status;
+
+        if (newStatus === oldStatus) {
+          showMessage(message, "No refund status change was made.");
+          return;
+        }
+
+        saveButton.disabled = true;
+        saveButton.textContent = "Saving...";
+
+        try {
+          await api(
+            "/api/admin/refunds/" + encodeURIComponent(refund.id) + "/status",
+            {
+              method: "POST",
+              body: JSON.stringify({ status: newStatus })
+            }
+          );
+
+          try {
+            await sendCustomerStatusEmail({
+              email: refund.customerEmail,
+              customerName: "Customer",
+              orderId: refund.orderId,
+              service: "CleanFlow Engineering service",
+              status: newStatus,
+              kind: "refund"
+            });
+
+            showMessage(
+              message,
+              "Refund status saved. Customer notification accepted by EmailJS."
+            );
+          } catch (emailError) {
+            console.error("Customer refund-status email failed:", emailError);
+
+            showMessage(
+              message,
+              "Refund status saved, but the customer email failed: " +
+                emailError.message,
+              false
+            );
+          }
+
+          await loadRefunds();
+        } catch (error) {
+          showMessage(message, error.message, false);
+        } finally {
+          saveButton.disabled = false;
+          saveButton.textContent = "Save Status";
+        }
+      });
+
+      actionCell.appendChild(saveButton);
+      row.appendChild(actionCell);
+      table.appendChild(row);
+    }
+
+    showMessage(message, "Refund requests loaded successfully.");
+  } catch (error) {
+    showMessage(message, error.message, false);
+  }
+}
+
+async function loadDashboard() {
+  await Promise.all([loadOrders(), loadRefunds()]);
+}
+
+loginForm.addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const passwordInput = document.getElementById("adminPassword");
+  const button = document.getElementById("loginButton");
+  button.disabled = true;
+
+  try {
+    await api("/api/admin/login", {
+      method: "POST",
+      body: JSON.stringify({ password: passwordInput.value })
+    });
+
+    passwordInput.value = "";
+    showDashboard();
+    await loadDashboard();
+  } catch (error) {
+    showMessage(loginMessage, error.message, false);
+  } finally {
+    button.disabled = false;
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    await api("/api/admin/logout", { method: "POST" });
+  } catch (error) {
+    console.error("Logout error:", error);
+  } finally {
+    showLogin();
+    showMessage(loginMessage, "You have logged out.");
+  }
+});
+
+document.getElementById("refreshOrdersButton")
+  .addEventListener("click", loadOrders);
+
+document.getElementById("refreshRefundsButton")
+  .addEventListener("click", loadRefunds);
+
+// Restore the dashboard only if the server confirms a valid session.
+api("/api/admin/session")
+  .then(async () => {
+    showDashboard();
+    await loadDashboard();
+  })
+  .catch(() => {
+    showLogin();
+  });
+</script>
+</body>
+</html>
