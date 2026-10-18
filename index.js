@@ -301,21 +301,34 @@ const server = http.createServer(async (req, res) => {
       orders.push(order);
       await saveRecords(ORDERS_FILE, orders);
 
-// Send the customer confirmation.
-await sendResendEmail({
-  to: order.customerEmail,
-  subject: `CleanFlow Order Confirmation - ${order.id}`,
-  html: `
-    <h2>Thank you for choosing CleanFlow Engineering!</h2>
-    <p>Hello ${escapeHtml(order.customerName)},</p>
-    <p>We have received your service order.</p>
-    <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
-    <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
-    <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
-    <p><strong>Status:</strong> Pending Verification</p>
-    <p>This is a demo order. Your payment has not been automatically verified.</p>
-  `
-});
+
+      // Send the customer confirmation.
+      await sendResendEmail({
+        to: order.customerEmail,
+        subject: `CleanFlow Order Confirmation - ${order.id}`,
+        html: `
+          <h2>Thank you for choosing CleanFlow Engineering!</h2>
+          <p>Hello ${escapeHtml(order.customerName)},</p>
+          <p>We have received your service order.</p>
+
+          <p><strong>Order ID:</strong> ${escapeHtml(order.id)}</p>
+          <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
+          <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
+          <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
+
+          <hr>
+
+          <h3>Your Additional Instructions / Message</h3>
+          <p>${escapeHtml(
+            order.notes || "No additional instructions were provided."
+          )}</p>
+
+          <hr>
+
+          <p>This is a demo order. Your payment has not been automatically verified.</p>
+          <p>Thank you for choosing CleanFlow Engineering!</p>
+        `
+      });
 
 // Notify the CleanFlow owner.
 await sendResendEmail({
