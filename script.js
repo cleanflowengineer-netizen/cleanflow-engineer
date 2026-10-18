@@ -479,7 +479,7 @@ document.addEventListener("DOMContentLoaded", function () {
                   // The Node.js backend sends the customer and owner emails
                   // after successfully saving the order.
                   const emailMessage =
-                      "\nThe order confirmation email is handled by the server. Check your inbox and spam folder.";
+                "\nYour order has been saved. Email notifications may be delayed or unavailable in demo mode.";
                 let successMessage =
                     "Your demo order has been submitted successfully.";
 
