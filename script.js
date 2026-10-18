@@ -1,189 +1,118 @@
+
 /* ==========================================
-   CLEANFLOW ENGINEERING JAVASCRIPT
+   CLEANFLOW ENGINEERING
    School Project Demo
+   EmailJS + Node.js Backend
    Manual Payment Verification + Refund Requests
 ========================================== */
 
 document.addEventListener("DOMContentLoaded", function () {
+    "use strict";
 
-    /* ==========================================
-       1. MOBILE NAVIGATION
-    ========================================== */
+    /* 1. CONFIGURATION */
 
-    const menuToggle = document.getElementById("menuToggle");
-    const navMenu = document.getElementById("navMenu");
-
-    if (menuToggle && navMenu) {
-        menuToggle.addEventListener("click", function () {
-            navMenu.classList.toggle("active");
-
-            const expanded = navMenu.classList.contains("active");
-            menuToggle.setAttribute("aria-expanded", String(expanded));
-        });
-
-        navMenu.querySelectorAll("a").forEach(function (link) {
-            link.addEventListener("click", function () {
-                navMenu.classList.remove("active");
-                menuToggle.setAttribute("aria-expanded", "false");
-            });
-        });
-    }
-
-
-    /* ==========================================
-       2. SERVICE DETAILS MODAL
-    ========================================== */
-
-    const serviceModal = document.getElementById("serviceModal");
-    const modalTitle = document.getElementById("modalTitle");
-    const modalText = document.getElementById("modalText");
-
-    const serviceDescriptions = {
-        "Water Quality Testing":
-            "Laboratory-based water quality testing to assess physical, chemical, and microbiological characteristics.",
-
-        "Water Treatment Chemicals":
-            "Treatment chemical recommendations based on laboratory findings.",
-
-        "Laboratory Services":
-            "Laboratory analysis, reporting, and interpretation of water quality results.",
-
-        "Technical Consultation":
-            "Guidance on water quality problems, treatment recommendations, and chemical selection.",
-
-        "Water Quality Monitoring":
-            "Follow-up testing to evaluate treatment effectiveness.",
-
-        "On-Site Water Sampling":
-            "Collection and preparation of water samples for laboratory analysis."
-    };
-
-    window.openService = function (service) {
-        if (!serviceModal || !modalTitle || !modalText) return;
-
-        modalTitle.textContent = service;
-        modalText.textContent =
-            serviceDescriptions[service] ||
-            "CleanFlow Engineering provides water quality management services.";
-
-        serviceModal.classList.add("show");
-    };
-
-    window.closeService = function () {
-        if (serviceModal) {
-            serviceModal.classList.remove("show");
-        }
-    };
-
-    if (serviceModal) {
-        serviceModal.addEventListener("click", function (event) {
-            if (event.target === serviceModal) {
-                window.closeService();
-            }
-        });
-    }
-
-    document.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
-            window.closeService();
-        }
-    });
-
-
-    /* ==========================================
-       3. SELECT A SERVICE PACKAGE
-    ========================================== */
-
-    window.selectPackage = function (packageName) {
-        const serviceSelect = document.getElementById("quoteService");
-        const quoteSection = document.getElementById("quote");
-
-        if (serviceSelect) {
-            const options = Array.from(serviceSelect.options);
-
-            let matchingOption = options.find(function (option) {
-                return option.value === packageName;
-            });
-
-            // Support older package naming.
-            if (!matchingOption && packageName === "Monitoring Plan") {
-                matchingOption = options.find(function (option) {
-                    return option.value === "Water Quality Monitoring";
-                });
-            }
-
-            if (matchingOption) {
-                serviceSelect.value = matchingOption.value;
-            }
-        }
-
-        if (quoteSection) {
-            quoteSection.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-        }
-    };
-
-
-    /* ==========================================
-       4. HELPER FUNCTIONS
-    ========================================== */
-
-    
-    // EmailJS setup for customer order confirmations
     const EMAILJS_PUBLIC_KEY = "zTVG7TfT8a3f7C28r";
     const EMAILJS_SERVICE_ID = "service_ndmbg2r";
-    const EMAILJS_ORDER_TEMPLATE_ID = "template_sl7hzru";
+    const EMAILJS_ADMIN_TEMPLATE_ID = "template_yzzz0ms";
+    const EMAILJS_CUSTOMER_TEMPLATE_ID = "template_sl7hzru";
+    const ADMIN_EMAIL = "cleanflowengineer@gmail.com";
+
+    let emailJSReady = false;
+    let orderSubmissionInProgress = false;
+    let refundSubmissionInProgress = false;
 
     if (window.emailjs) {
-        window.emailjs.init({
-            publicKey: EMAILJS_PUBLIC_KEY
-        });
+        try {
+            window.emailjs.init({
+                publicKey: EMAILJS_PUBLIC_KEY
+            });
+            emailJSReady = true;
+            console.log("EmailJS initialized.");
+        } catch (error) {
+            console.error("EmailJS initialization failed:", error);
+        }
+    } else {
+        console.error(
+            "EmailJS SDK missing. Check the script tags in index.html."
+        );
+    }
+
+    /* 2. GENERAL HELPERS */
+
+    function byId(id) {
+        return document.getElementById(id);
     }
 
     function showMessage(element, message, success) {
         if (!element) return;
 
         element.textContent = message;
-        element.setAttribute(
-            "role",
-            success ? "status" : "alert"
-        );
-
+        element.style.whiteSpace = "pre-line";
         element.style.color = success ? "#167447" : "#b42318";
+        element.setAttribute("role", success ? "status" : "alert");
     }
 
-    async function sendJSON(url, data) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  });
+    function createRequestKey() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
+            return window.crypto.randomUUID();
+        }
 
-  const text = await response.text();
-  console.log("API URL:", url);
-  console.log("HTTP status:", response.status);
-  console.log("Server response:", text);
+        return "cf-" + Date.now() + "-" +
+            Math.random().toString(36).slice(2) + "-" +
+            Math.random().toString(36).slice(2);
+    }
 
-  let result;
+    async function sendJSON(url, data, idempotencyKey) {
+        let response;
 
-  try {
-    result = JSON.parse(text);
-  } catch {
-    throw new Error(
-      `Server returned non-JSON (HTTP ${response.status}). Open Console with F12.`
-    );
-  }
+        try {
+            const headers = {
+                "Content-Type": "application/json"
+            };
 
-  if (!response.ok) {
-    throw new Error(result.error || `HTTP ${response.status}`);
-  }
+            if (idempotencyKey) {
+                headers["Idempotency-Key"] = idempotencyKey;
+            }
 
-  return result;
-}
+            response = await fetch(url, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify(data)
+            });
+        } catch (error) {
+            console.error("Backend connection failed:", error);
+
+            throw new Error(
+                "Cannot connect to the CleanFlow backend. Check that " +
+                "server.js is running and that the website preview uses " +
+                "the same origin as the backend."
+            );
+        }
+
+        const responseText = await response.text();
+
+        console.log("API URL:", url);
+        console.log("API status:", response.status);
+        console.log("API response:", responseText);
+
+        let result;
+
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            throw new Error(
+                "The server returned an unexpected response. Check the API route in server.js."
+            );
+        }
+
+        if (!response.ok) {
+            throw new Error(
+                result.error || result.message || "Request failed."
+            );
+        }
+
+        return result;
+    }
 
     function fileToDataURL(file) {
         return new Promise(function (resolve, reject) {
@@ -201,16 +130,224 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    /* 3. EMAILJS */
 
-    /* ==========================================
-       5. CONSULTATION / CHECKOUT DETAILS FORM
-       
-       This form collects the customer's details.
-       It does not send email through EmailJS.
-    ========================================== */
+    function makeEmailParameters(details, recipient, subject) {
+        const name = details.customer_name || "";
+        const email = details.customer_email || "";
+        const notes = details.notes ||
+            "No additional instructions provided.";
 
-    const quoteForm = document.getElementById("quoteForm");
-    const quoteResult = document.getElementById("quoteResult");
+        return {
+            to_email: recipient,
+            email_subject: subject,
+            name: name,
+            email: email,
+            customer_name: name,
+            customer_email: email,
+            company: details.company || "Not provided",
+            order_id: details.order_id || "Not provided",
+            service: details.service || "Not provided",
+            payment_method: details.payment_method || "Not provided",
+            payment_reference: details.payment_reference || "Not provided",
+            note: notes,
+            notes: notes,
+            status: details.status || "Pending Verification",
+            refund_id: details.refund_id || "Not applicable",
+            reason: details.reason || "Not applicable"
+        };
+    }
+
+    async function sendEmail(templateId, parameters) {
+        if (!emailJSReady || !window.emailjs) {
+            throw new Error("EmailJS is not initialized.");
+        }
+
+        return window.emailjs.send(
+            EMAILJS_SERVICE_ID,
+            templateId,
+            parameters
+        );
+    }
+
+    // One admin-template attempt and one customer-template attempt per event.
+    async function sendBothEmails(adminParameters, customerParameters) {
+        const results = await Promise.allSettled([
+            sendEmail(EMAILJS_ADMIN_TEMPLATE_ID, adminParameters),
+            sendEmail(EMAILJS_CUSTOMER_TEMPLATE_ID, customerParameters)
+        ]);
+
+        const adminSent = results[0].status === "fulfilled";
+        const customerSent = results[1].status === "fulfilled";
+
+        if (adminSent) {
+            console.log("Admin email accepted by EmailJS.");
+        } else {
+            console.error("Admin email failed:", results[0].reason);
+        }
+
+        if (customerSent) {
+            console.log("Customer email accepted by EmailJS.");
+        } else {
+            console.error("Customer email failed:", results[1].reason);
+        }
+
+        return { adminSent, customerSent };
+    }
+
+    function emailStatusMessage(results, type) {
+        if (results.adminSent && results.customerSent) {
+            return "\nAdmin and customer " + type +
+                " emails were accepted by EmailJS.";
+        }
+
+        if (!results.adminSent && !results.customerSent) {
+            return "\nThe " + type +
+                " was saved, but both email attempts failed. Check the browser console and EmailJS Email History.";
+        }
+
+        if (!results.adminSent) {
+            return "\nThe customer email was accepted, but the admin email failed. Check the admin template settings and EmailJS Email History.";
+        }
+
+        return "\nThe admin email was accepted, but the customer email failed. Check the customer template settings and EmailJS Email History.";
+    }
+
+    /* 4. MOBILE NAVIGATION */
+
+    const menuToggle = byId("menuToggle");
+    const navMenu = byId("navMenu");
+
+    if (menuToggle && navMenu) {
+        menuToggle.addEventListener("click", function () {
+            navMenu.classList.toggle("active");
+            menuToggle.setAttribute(
+                "aria-expanded",
+                String(navMenu.classList.contains("active"))
+            );
+        });
+
+        navMenu.querySelectorAll("a").forEach(function (link) {
+            link.addEventListener("click", function () {
+                navMenu.classList.remove("active");
+                menuToggle.setAttribute("aria-expanded", "false");
+            });
+        });
+    }
+
+    /* 5. SERVICE DETAILS MODAL */
+
+    const serviceModal = byId("serviceModal");
+    const modalTitle = byId("modalTitle");
+    const modalText = byId("modalText");
+
+    const serviceDescriptions = {
+        "Water Quality Testing":
+            "Laboratory-based water quality testing to assess physical, chemical, and microbiological characteristics.",
+        "Water Treatment Chemicals":
+            "Treatment chemical recommendations based on laboratory findings.",
+        "Laboratory Services":
+            "Laboratory analysis, reporting, and interpretation of water quality results.",
+        "Technical Consultation":
+            "Guidance on water quality problems, treatment recommendations, and chemical selection.",
+        "Water Quality Monitoring":
+            "Follow-up testing to evaluate treatment effectiveness.",
+        "On-Site Water Sampling":
+            "Collection and preparation of water samples for laboratory analysis."
+    };
+
+    window.openService = function (service) {
+        if (!serviceModal || !modalTitle || !modalText) return;
+
+        modalTitle.textContent = service;
+        modalText.textContent = serviceDescriptions[service] ||
+            "CleanFlow Engineering provides water quality management services.";
+
+        serviceModal.classList.add("show");
+    };
+
+    window.closeService = function () {
+        if (serviceModal) serviceModal.classList.remove("show");
+    };
+
+    if (serviceModal) {
+        serviceModal.addEventListener("click", function (event) {
+            if (event.target === serviceModal) {
+                window.closeService();
+            }
+        });
+    }
+
+    document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") window.closeService();
+    });
+
+    /* 6. SELECT A SERVICE PACKAGE */
+
+    window.selectPackage = function (packageName) {
+        const serviceSelect = byId("quoteService");
+        const quoteSection = byId("quote");
+
+        if (serviceSelect) {
+            let option = Array.from(serviceSelect.options).find(
+                function (item) {
+                    return item.value === packageName;
+                }
+            );
+
+            if (!option && packageName === "Monitoring Plan") {
+                option = Array.from(serviceSelect.options).find(
+                    function (item) {
+                        return item.value === "Water Quality Monitoring";
+                    }
+                );
+            }
+
+            if (option) serviceSelect.value = option.value;
+        }
+
+        if (quoteSection) {
+            quoteSection.scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+    };
+
+    /* 7. CONTINUE TO PAYMENT */
+
+    const continueButton = byId("continueToPaymentButton");
+
+    if (continueButton) {
+        continueButton.addEventListener("click", function (event) {
+            event.preventDefault();
+
+            const quoteForm = byId("quoteForm");
+
+            if (quoteForm && !quoteForm.reportValidity()) return;
+
+            const paymentSection =
+                byId("payment") ||
+                byId("paymentSection") ||
+                byId("checkout");
+
+            if (paymentSection) {
+                paymentSection.scrollIntoView({
+                    behavior: "smooth",
+                    block: "start"
+                });
+            } else {
+                console.error(
+                    "Payment section not found. Check the section ID in index.html."
+                );
+            }
+        });
+    }
+
+    /* 8. CHECKOUT DETAILS FORM */
+
+    const quoteForm = byId("quoteForm");
+    const quoteResult = byId("quoteResult");
 
     if (quoteForm) {
         quoteForm.addEventListener("submit", function (event) {
@@ -218,27 +355,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (!quoteForm.reportValidity()) return;
 
-            const name =
-                document.getElementById("quoteName")?.value.trim() || "";
-
             showMessage(
                 quoteResult,
-                "Checkout details saved for this session" +
-                (name ? ", " + name : "") +
-                ". Please select a payment method, follow the payment instructions, and upload your payment receipt below.",
+                "Checkout details completed. Continue to payment to select a payment method and upload your receipt.",
                 true
             );
 
             const paymentSection =
-                document.getElementById("payment");
+                byId("payment") ||
+                byId("paymentSection") ||
+                byId("checkout");
 
-            const paymentArea =
-                paymentSection ||
-                document.getElementById("paymentSection") ||
-                document.getElementById("checkout");
-
-            if (paymentArea) {
-                paymentArea.scrollIntoView({
+            if (paymentSection) {
+                paymentSection.scrollIntoView({
                     behavior: "smooth",
                     block: "start"
                 });
@@ -246,18 +375,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-
-    /* ==========================================
-       6. PAYMENT METHOD SELECTION
-    ========================================== */
+    /* 9. PAYMENT METHOD SELECTION */
 
     const paymentMethods = document.querySelectorAll(
         'input[name="paymentMethod"]'
     );
 
-    const gcashPayment = document.getElementById("gcashPayment");
-    const bankPayment = document.getElementById("bankPayment");
-    const cardPayment = document.getElementById("cardPayment");
+    const gcashPayment = byId("gcashPayment");
+    const bankPayment = byId("bankPayment");
+    const cardPayment = byId("cardPayment");
+    const paymentResult = byId("paymentResult");
 
     function updatePaymentMethod() {
         const selected = document.querySelector(
@@ -279,15 +406,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 !["Credit Card", "Debit Card"].includes(value);
         }
 
-        const paymentResult = document.getElementById("paymentResult");
-
-        if (
-            paymentResult &&
-            ["Credit Card", "Debit Card"].includes(value)
-        ) {
+        if (["Credit Card", "Debit Card"].includes(value)) {
             showMessage(
                 paymentResult,
-                "Credit and debit card transactions are not connected to a payment gateway in this demo. Please choose GCash or Online Bank Transfer for manual verification.",
+                "Credit and debit card payments are not available in this demo. Please choose GCash or Online Bank Transfer.",
                 false
             );
         } else if (paymentResult) {
@@ -301,41 +423,28 @@ document.addEventListener("DOMContentLoaded", function () {
 
     updatePaymentMethod();
 
+    /* 10. SUBMIT DEMO ORDER */
 
-    /* ==========================================
-       7. SUBMIT DEMO ORDER
-       
-       Sends order information and receipt to server.js.
-       This does NOT automatically verify actual payment.
-    ========================================== */
-
-    const submitOrderButton =
-        document.getElementById("submitDemoOrderButton");
+    const submitOrderButton = byId("submitDemoOrderButton");
 
     if (submitOrderButton) {
         submitOrderButton.addEventListener("click", async function (event) {
             event.preventDefault();
 
-            const paymentResult =
-                document.getElementById("paymentResult");
+            // Prevent overlapping clicks while a submission is processing.
+            if (orderSubmissionInProgress) {
+                console.warn("Duplicate order submission blocked.");
+                return;
+            }
 
-            const nameInput = document.getElementById("quoteName");
-            const emailInput = document.getElementById("quoteEmail");
-            const companyInput = document.getElementById("quoteCompany");
-            const serviceInput = document.getElementById("quoteService");
-            const notesInput = document.getElementById("quoteMessage");
+            const nameInput = byId("quoteName");
+            const emailInput = byId("quoteEmail");
+            const companyInput = byId("quoteCompany");
+            const serviceInput = byId("quoteService");
+            const notesInput = byId("quoteMessage");
+            const referenceInput = byId("paymentReference");
+            const proofInput = byId("paymentProof");
 
-            const paymentReferenceInput =
-                document.getElementById("paymentReference");
-
-            const paymentProofInput =
-                document.getElementById("paymentProof");
-
-            const selectedMethod = document.querySelector(
-                'input[name="paymentMethod"]:checked'
-            );
-
-            // Ensure required checkout details are complete.
             if (
                 !nameInput ||
                 !emailInput ||
@@ -346,15 +455,14 @@ document.addEventListener("DOMContentLoaded", function () {
             ) {
                 showMessage(
                     paymentResult,
-                    "Please complete your name, email address, and service package in the checkout details form first.",
+                    "Please complete your name, email address, and service package in the checkout details first.",
                     false
                 );
 
-                document.getElementById("quote")?.scrollIntoView({
+                byId("quote")?.scrollIntoView({
                     behavior: "smooth",
                     block: "start"
                 });
-
                 return;
             }
 
@@ -368,6 +476,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 return;
             }
 
+            const selectedMethod = document.querySelector(
+                'input[name="paymentMethod"]:checked'
+            );
+
             if (!selectedMethod) {
                 showMessage(
                     paymentResult,
@@ -379,23 +491,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const paymentMethod = selectedMethod.value;
 
-            // Cards cannot be processed without a payment gateway.
-            if (
-                paymentMethod === "Credit Card" ||
-                paymentMethod === "Debit Card"
-            ) {
+            if (["Credit Card", "Debit Card"].includes(paymentMethod)) {
                 showMessage(
                     paymentResult,
-                    "Card payments are not available in this demonstration. Please select GCash or Online Bank Transfer.",
+                    "Card payments are unavailable. Choose GCash or Online Bank Transfer.",
                     false
                 );
                 return;
             }
 
-            const receiptFile =
-                paymentProofInput &&
-                paymentProofInput.files &&
-                paymentProofInput.files[0];
+            const receiptFile = proofInput?.files?.[0];
 
             if (!receiptFile) {
                 showMessage(
@@ -403,7 +508,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     "Please upload your payment receipt or screenshot.",
                     false
                 );
-                paymentProofInput?.focus();
+                proofInput?.focus();
                 return;
             }
 
@@ -417,22 +522,23 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!allowedTypes.includes(receiptFile.type)) {
                 showMessage(
                     paymentResult,
-                    "Unsupported file type. Upload a JPG, PNG, WEBP, or PDF receipt.",
+                    "Upload a JPG, PNG, WEBP, or PDF receipt.",
                     false
                 );
                 return;
             }
 
-            const maxFileSize = 4 * 1024 * 1024;
-
-            if (receiptFile.size > maxFileSize) {
+            if (receiptFile.size > 4 * 1024 * 1024) {
                 showMessage(
                     paymentResult,
-                    "Your receipt must be 4 MB or smaller.",
+                    "The receipt must be 4 MB or smaller.",
                     false
                 );
                 return;
             }
+
+            // Lock immediately, before reading the receipt or sending a request.
+            orderSubmissionInProgress = true;
 
             const originalButtonText = submitOrderButton.textContent;
             submitOrderButton.disabled = true;
@@ -440,7 +546,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
             showMessage(
                 paymentResult,
-                "Uploading your order and payment receipt...",
+                "Saving your order and receipt...",
                 true
             );
 
@@ -450,109 +556,109 @@ document.addEventListener("DOMContentLoaded", function () {
                 const orderData = {
                     customerName: nameInput.value.trim(),
                     customerEmail: emailInput.value.trim(),
-                    company: companyInput
-                        ? companyInput.value.trim()
-                        : "",
+                    company: companyInput ? companyInput.value.trim() : "",
                     service: serviceInput.value,
                     paymentMethod: paymentMethod,
-                    paymentReference: paymentReferenceInput
-                        ? paymentReferenceInput.value.trim()
+                    paymentReference: referenceInput
+                        ? referenceInput.value.trim()
                         : "",
-                    notes: notesInput
-                        ? notesInput.value.trim()
-                        : "",
+                    notes: notesInput ? notesInput.value.trim() : "",
                     receipt: {
                         name: receiptFile.name,
                         dataUrl: receiptDataURL
                     }
                 };
 
-                  const result = await sendJSON(
-                    "/api/orders",
-                    orderData
-                  );
+                // One unique key per checkout attempt, reused for a retry.
+                // The current UI does not automatically retry a failed request.
+                const idempotencyKey = createRequestKey();
 
-                  const orderId =
+                const result = await sendJSON(
+                    "/api/orders",
+                    orderData,
+                    idempotencyKey
+                );
+
+                const orderId =
                     result.orderId ||
                     result.id ||
-                    result.order?.id;
+                    result.order?.id ||
+                    "Not provided";
 
+                const emailDetails = {
+                    customer_name: nameInput.value.trim(),
+                    customer_email: emailInput.value.trim(),
+                    company: companyInput
+                        ? companyInput.value.trim()
+                        : "Not provided",
+                    order_id: orderId,
+                    service: serviceInput.value,
+                    payment_method: paymentMethod,
+                    payment_reference: referenceInput
+                        ? referenceInput.value.trim()
+                        : "Not provided",
+                    notes: notesInput
+                        ? notesInput.value.trim()
+                        : "No additional instructions provided.",
+                    status: result.status || "Pending Verification"
+                };
 
-                  // Send the confirmation email only after the server
-                  // successfully saves the order.
-                  let emailMessage = "";
+                let emailMessage =
+                    "\nEmail notifications were not attempted.";
 
-                  if (window.emailjs) {
-                      try {
-                          await window.emailjs.send(
-                              EMAILJS_SERVICE_ID,
-                              EMAILJS_ORDER_TEMPLATE_ID,
-                              {
-                                  email: emailInput.value.trim(),
-                                  name: nameInput.value.trim(),
-                                  order_id: orderId || "Not provided",
-                                  company: companyInput
-                                      ? companyInput.value.trim()
-                                      : "",
-                                  service: serviceInput.value,
-                                  payment_method: paymentMethod,
-                                  payment_reference: paymentReferenceInput
-                                      ? paymentReferenceInput.value.trim()
-                                      : "",
-                                  status: "Pending Verification"
-                              }
-                          );
+                // Exactly one call to sendBothEmails per successful order
+                // in this script instance. This makes one admin-template
+                // attempt and one customer-template attempt.
+                if (emailJSReady) {
+                    const emailResults = await sendBothEmails(
+                        makeEmailParameters(
+                            emailDetails,
+                            ADMIN_EMAIL,
+                            "NEW CLEANFLOW ORDER - " + orderId
+                        ),
+                        makeEmailParameters(
+                            emailDetails,
+                            emailInput.value.trim(),
+                            "CleanFlow Order Confirmation - " + orderId
+                        )
+                    );
 
-                          emailMessage =
-                              "\nConfirmation email sent successfully.";
-                      } catch (emailError) {
-                          console.error(
-                              "Order saved, but confirmation email failed:",
-                              emailError
-                          );
+                    emailMessage =
+                        emailStatusMessage(emailResults, "order");
+                } else {
+                    emailMessage =
+                        "\nThe order was saved, but EmailJS did not initialize. Check the EmailJS SDK in index.html.";
+                }
 
-                          emailMessage =
-                              "\nYour order was saved, but the confirmation email could not be sent. Please check the EmailJS settings.";
-                      }
-                  } else {
-                      emailMessage =
-                          "\nEmail service is unavailable. Your order was still saved.";
-                  }
+                let message =
+                    "Your demo order was submitted successfully.";
 
-                  let successMessage =
-                      "Your demo order has been submitted successfully.";
+                if (orderId !== "Not provided") {
+                    message += "\nOrder reference: " + orderId;
 
-                  if (orderId) {
-                    successMessage +=
-                        "\nOrder reference: " + orderId;
-                    const refundOrderId =
-                        document.getElementById("refundOrderId");
-
+                    const refundOrderId = byId("refundOrderId");
                     if (refundOrderId) {
                         refundOrderId.value = orderId;
                     }
                 }
 
-                successMessage +=
-                    "\nStatus: Awaiting manual payment verification. Your receipt must be checked by the administrator. This is not an automatic payment confirmation.";
+                message +=
+                    "\nStatus: Pending Verification. The administrator must review the receipt. Payment is not automatically verified.";
 
                 showMessage(
                     paymentResult,
-                    successMessage + emailMessage,
+                    message + emailMessage,
                     true
                 );
 
-                const refundEmail =
-                    document.getElementById("refundEmail");
+                const refundEmail = byId("refundEmail");
 
                 if (refundEmail) {
                     refundEmail.value = emailInput.value.trim();
                 }
 
-                // Clear only the receipt after successful submission.
-                // Keep the customer and service details visible.
-                if (paymentProofInput) {
-                    paymentProofInput.value = "";
+                if (proofInput) {
+                    proofInput.value = "";
                 }
 
             } catch (error) {
@@ -560,11 +666,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
                 showMessage(
                     paymentResult,
-                    error.message ||
-                    "Unable to submit the order. Make sure the Node.js server is running and try again.",
+                    error.message || "Could not submit your order.",
                     false
                 );
             } finally {
+                orderSubmissionInProgress = false;
                 submitOrderButton.disabled = false;
                 submitOrderButton.textContent =
                     originalButtonText || "Submit Demo Order";
@@ -572,47 +678,52 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    /* 11. REFUND REQUEST FORM */
 
-    /* ==========================================
-       8. REFUND REQUEST FORM
-       
-       Submits a refund request for admin review.
-       This does NOT transfer money or automatically
-       issue a refund.
-    ========================================== */
-
-    const refundForm = document.getElementById("refundForm");
-    const refundResult = document.getElementById("refundResult");
+    const refundForm = byId("refundForm");
+    const refundResult = byId("refundResult");
 
     if (refundForm) {
         refundForm.addEventListener("submit", async function (event) {
             event.preventDefault();
 
+            if (refundSubmissionInProgress) {
+                console.warn("Duplicate refund submission blocked.");
+                return;
+            }
+
             if (!refundForm.reportValidity()) return;
 
-            const orderId =
-                document.getElementById("refundOrderId")?.value.trim() || "";
-
-            const customerEmail =
-                document.getElementById("refundEmail")?.value.trim() || "";
-
-            const reason =
-                document.getElementById("refundReason")?.value.trim() || "";
+            const orderId = byId("refundOrderId")?.value.trim() || "";
+            const customerEmail = byId("refundEmail")?.value.trim() || "";
+            const reason = byId("refundReason")?.value.trim() || "";
 
             if (!orderId || !customerEmail || !reason) {
                 showMessage(
                     refundResult,
-                    "Please enter your order reference, email address, and reason for the refund request.",
+                    "Enter your order reference, email address, and refund reason.",
                     false
                 );
                 return;
             }
 
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
+                showMessage(
+                    refundResult,
+                    "Enter a valid email address.",
+                    false
+                );
+                return;
+            }
+
+            refundSubmissionInProgress = true;
+
             const refundButton =
                 refundForm.querySelector('button[type="submit"]');
 
-            const originalButtonText =
-                refundButton ? refundButton.textContent : "";
+            const originalButtonText = refundButton
+                ? refundButton.textContent
+                : "";
 
             if (refundButton) {
                 refundButton.disabled = true;
@@ -621,47 +732,95 @@ document.addEventListener("DOMContentLoaded", function () {
 
             showMessage(
                 refundResult,
-                "Submitting your refund request...",
+                "Submitting refund request...",
                 true
             );
 
             try {
-                const result = await sendJSON("/api/refunds", {
-                    orderId: orderId,
-                    customerEmail: customerEmail,
-                    reason: reason
-                });
+                const result = await sendJSON(
+                    "/api/refunds",
+                    {
+                        orderId: orderId,
+                        customerEmail: customerEmail,
+                        reason: reason
+                    },
+                    createRequestKey()
+                );
 
-                const refundReference =
+                const refundId =
                     result.refundId ||
                     result.id ||
-                    result.refund?.id;
+                    result.refund?.id ||
+                    "Not provided";
+
+                let emailMessage =
+                    "\nRefund email notifications were not attempted.";
+
+                if (emailJSReady) {
+                    const refundDetails = {
+                        customer_name: "CleanFlow customer",
+                        customer_email: customerEmail,
+                        company: "Not provided",
+                        order_id: orderId,
+                        service: "Refund request",
+                        payment_method: "Not applicable",
+                        payment_reference: "Not applicable",
+                        notes: "Refund request submitted for administrator review.",
+                        status: result.status || "Refund Pending Review",
+                        refund_id: refundId,
+                        reason: reason
+                    };
+
+                    const emailResults = await sendBothEmails(
+                        makeEmailParameters(
+                            refundDetails,
+                            ADMIN_EMAIL,
+                            "NEW REFUND REQUEST - " + refundId
+                        ),
+                        makeEmailParameters(
+                            refundDetails,
+                            customerEmail,
+                            "CleanFlow Refund Request Received - " + refundId
+                        )
+                    );
+
+                    emailMessage =
+                        emailStatusMessage(
+                            emailResults,
+                            "refund request"
+                        );
+                } else {
+                    emailMessage =
+                        "\nThe refund was saved, but EmailJS is not initialized.";
+                }
 
                 let message =
-                    "Your refund request has been submitted for administrator review.";
+                    "Your refund request was submitted for administrator review.";
 
-                if (refundReference) {
-                    message +=
-                        "\nRefund request reference: " + refundReference;
+                if (refundId !== "Not provided") {
+                    message += "\nRefund reference: " + refundId;
                 }
 
                 message +=
                     "\nNo money has been refunded automatically. The administrator must review the request and handle any actual refund separately.";
 
-                showMessage(refundResult, message, true);
-
-                // Keep the submitted information visible for reference.
+                showMessage(
+                    refundResult,
+                    message + emailMessage,
+                    true
+                );
 
             } catch (error) {
                 console.error("Refund request error:", error);
 
                 showMessage(
                     refundResult,
-                    error.message ||
-                    "Could not submit your refund request. Please check that the Node.js server is running.",
+                    error.message || "Could not submit your refund request.",
                     false
                 );
             } finally {
+                refundSubmissionInProgress = false;
+
                 if (refundButton) {
                     refundButton.disabled = false;
                     refundButton.textContent =
@@ -671,32 +830,25 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    /* 12. BACKEND HEALTH CHECK */
 
-    /* ==========================================
-       9. OPTIONAL HEALTH CHECK
-       
-       Helps indicate whether the backend is reachable.
-    ========================================== */
+    fetch("/api/health", { cache: "no-store" })
+        .then(async function (response) {
+            const body = await response.text();
 
-    fetch("/api/health")
-        .then(function (response) {
+            console.log("CleanFlow health status:", response.status);
+            console.log("CleanFlow health response:", body);
+
             if (!response.ok) {
-                throw new Error("Backend health check failed.");
+                throw new Error(
+                    "Health endpoint returned HTTP " + response.status
+                );
             }
-
-            return response.json();
-        })
-        .then(function (data) {
-            console.log(
-                "CleanFlow backend connected.",
-                data
-            );
         })
         .catch(function (error) {
             console.warn(
-                "CleanFlow backend health check unavailable. Make sure server.js is running.",
+                "Backend health check failed. Verify server.js and the OneCompiler preview.",
                 error
             );
         });
-
 });
