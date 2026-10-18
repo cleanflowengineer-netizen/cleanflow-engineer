@@ -351,6 +351,7 @@ await sendResendEmail({
     <p><strong>Service:</strong> ${escapeHtml(order.service)}</p>
     <p><strong>Payment method:</strong> ${escapeHtml(order.paymentMethod)}</p>
     <p><strong>Payment reference:</strong> ${escapeHtml(order.paymentReference || "Not provided")}</p>
+    <p><strong>Additional Instructions:</strong> ${escapeHtml(order.notes || "None provided")}</p>
     <p><strong>Status:</strong> ${escapeHtml(order.status)}</p>
     <p>This is a demo order. Verify payment separately.</p>
   `
