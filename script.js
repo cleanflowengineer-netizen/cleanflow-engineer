@@ -1,4 +1,3 @@
-
 /* ==========================================
    CLEANFLOW ENGINEERING JAVASCRIPT
    School Project Demo
@@ -130,6 +129,16 @@ document.addEventListener("DOMContentLoaded", function () {
     /* ==========================================
        4. HELPER FUNCTIONS
     ========================================== */
+    // EmailJS setup for customer order confirmations
+    const EMAILJS_PUBLIC_KEY = "zTVG7TfT8a3f7C28r";
+    const EMAILJS_SERVICE_ID = "service_ndmbg2r";
+    const EMAILJS_ORDER_TEMPLATE_ID = "template_sl7hzru";
+
+    if (window.emailjs) {
+        window.emailjs.init({
+            publicKey: EMAILJS_PUBLIC_KEY
+        });
+    }
 
     function showMessage(element, message, success) {
         if (!element) return;
@@ -466,6 +475,48 @@ document.addEventListener("DOMContentLoaded", function () {
                     result.id ||
                     result.order?.id;
 
+               
+                  // Send the confirmation email only after the server
+                  // successfully saves the order.
+                  let emailMessage = "";
+
+                  if (window.emailjs) {
+                      try {
+                          await window.emailjs.send(
+                              EMAILJS_SERVICE_ID,
+                              EMAILJS_ORDER_TEMPLATE_ID,
+                              {
+                                  email: emailInput.value.trim(),
+                                  name: nameInput.value.trim(),
+                                  order_id: orderId || "Not provided",
+                                  company: companyInput
+                                      ? companyInput.value.trim()
+                                      : "",
+                                  service: serviceInput.value,
+                                  payment_method: paymentMethod,
+                                  payment_reference: paymentReferenceInput
+                                      ? paymentReferenceInput.value.trim()
+                                      : "",
+                                  status: "Pending Verification"
+                              }
+                          );
+
+                          emailMessage =
+                              "\nConfirmation email sent successfully.";
+                      } catch (emailError) {
+                          console.error(
+                              "Order saved, but confirmation email failed:",
+                              emailError
+                          );
+
+                          emailMessage =
+                              "\nYour order was saved, but the confirmation email could not be sent. Please check the EmailJS settings.";
+                      }
+                  } else {
+                      emailMessage =
+                          "\nEmail service is unavailable. Your order was still saved.";
+                  }
+
                 let successMessage =
                     "Your demo order has been submitted successfully.";
 
@@ -484,7 +535,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 successMessage +=
                     "\nStatus: Awaiting manual payment verification. Your receipt must be checked by the administrator. This is not an automatic payment confirmation.";
 
-                showMessage(paymentResult, successMessage, true);
+                showMessage(
+                   paymentResult,
+                   successMessage + emailMessage,
+                   true
+                  );
 
                 const refundEmail =
                     document.getElementById("refundEmail");
