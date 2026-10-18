@@ -476,47 +476,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     result.order?.id;
 
                
-                  // Send the confirmation email only after the server
-                  // successfully saves the order.
-                  let emailMessage = "";
-
-                  if (window.emailjs) {
-                      try {
-                          await window.emailjs.send(
-                              EMAILJS_SERVICE_ID,
-                              EMAILJS_ORDER_TEMPLATE_ID,
-                              {
-                                  email: emailInput.value.trim(),
-                                  name: nameInput.value.trim(),
-                                  order_id: orderId || "Not provided",
-                                  company: companyInput
-                                      ? companyInput.value.trim()
-                                      : "",
-                                  service: serviceInput.value,
-                                  payment_method: paymentMethod,
-                                  payment_reference: paymentReferenceInput
-                                      ? paymentReferenceInput.value.trim()
-                                      : "",
-                                  status: "Pending Verification"
-                              }
-                          );
-
-                          emailMessage =
-                              "\nConfirmation email sent successfully.";
-                      } catch (emailError) {
-                          console.error(
-                              "Order saved, but confirmation email failed:",
-                              emailError
-                          );
-
-                          emailMessage =
-                              "\nYour order was saved, but the confirmation email could not be sent. Please check the EmailJS settings.";
-                      }
-                  } else {
-                      emailMessage =
-                          "\nEmail service is unavailable. Your order was still saved.";
-                  }
-
+                  // The Node.js backend sends the customer and owner emails
+                  // after successfully saving the order.
+                  const emailMessage =
+                      "\nThe order confirmation email is handled by the server. Check your inbox and spam folder.";
                 let successMessage =
                     "Your demo order has been submitted successfully.";
 
