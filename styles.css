@@ -1431,3 +1431,190 @@ footer p {
         grid-template-columns: 1fr;
     }
 }
+/* ==========================================
+   CLEANFLOW ENGINEERING
+   PROFESSIONAL DEMO CARD CHECKOUT
+========================================== */
+
+#cardPayment {
+    display: block;
+    width: 100%;
+    max-width: 720px;
+    margin: 20px auto;
+    padding: 24px 28px;
+    box-sizing: border-box;
+
+    background: #f8fbff;
+    border: 1px solid #d9e7f8;
+    border-radius: 14px;
+
+    box-shadow: 0 4px 15px rgba(15, 72, 120, 0.06);
+}
+
+/* Checkout heading */
+#cardPayment h4 {
+    display: block;
+    width: 100%;
+    margin: 0 0 20px;
+    padding: 0;
+
+    text-align: center;
+    white-space: nowrap;
+
+    color: #075985;
+    font-size: 23px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+/* School project notice */
+#cardPayment .payment-notice {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+
+    margin: 0 0 22px;
+    padding: 15px 18px;
+
+    background: #edf6ff;
+    border-left: 4px solid #0284c7;
+    border-radius: 9px;
+
+    text-align: center;
+}
+
+#cardPayment .payment-notice strong {
+    display: block;
+    margin: 0 0 6px;
+
+    color: #075985;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+#cardPayment .payment-notice p {
+    margin: 0;
+
+    color: #334e68;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+/* Two-column card form */
+#cardPayment {
+    display: grid;
+    grid-template-columns: 145px minmax(0, 1fr);
+    column-gap: 16px;
+    row-gap: 13px;
+    align-items: center;
+}
+
+/* Elements that use the full width */
+#cardPayment h4,
+#cardPayment .payment-notice,
+#cardPayment .qr-note,
+#cardPayment #cardDemoResult {
+    grid-column: 1 / -1;
+}
+
+/* Field labels */
+#cardPayment label {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+
+    color: #24445f;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+    text-align: right;
+}
+
+/* Card input fields */
+#cardPayment input[type="text"],
+#cardPayment input[type="password"] {
+    display: block;
+    width: 100%;
+    height: 42px;
+    min-height: 42px;
+    margin: 0;
+    padding: 0 12px;
+    box-sizing: border-box;
+
+    background: #ffffff;
+    border: 1px solid #cbd9e8;
+    border-radius: 7px;
+
+    color: #173b57;
+    font-family: inherit;
+    font-size: 14px;
+
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+#cardPayment input[type="text"]:focus,
+#cardPayment input[type="password"]:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.10);
+}
+
+/* Remove unwanted browser autofill coloring */
+#cardPayment input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px #ffffff inset;
+}
+
+/* Informational text */
+#cardPayment .qr-note {
+    margin: 2px 0 0;
+    padding: 0;
+
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+/* Result message */
+#cardPayment #cardDemoResult {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* Respect the hidden attribute */
+#cardPayment[hidden] {
+    display: none !important;
+}
+
+/* Tablet and mobile layout */
+@media (max-width: 560px) {
+    #cardPayment {
+        grid-template-columns: 1fr;
+        gap: 8px;
+        padding: 18px;
+    }
+
+    #cardPayment h4,
+    #cardPayment .payment-notice,
+    #cardPayment .qr-note,
+    #cardPayment #cardDemoResult {
+        grid-column: 1;
+    }
+
+    #cardPayment h4 {
+        white-space: normal;
+        font-size: 16px;
+    }
+
+    #cardPayment label {
+        margin-top: 5px;
+        text-align: left;
+    }
+
+    #cardPayment input[type="text"],
+    #cardPayment input[type="password"] {
+        height: 42px;
+    }
+}
