@@ -61,6 +61,7 @@
         <a href="#industries">Industries</a>
         <a href="#business">Business Model</a>
         <a href="#packages">Packages</a>
+        <a href="#refund">Cancel / Refund</a>
         <a href="#contact">Contact</a>
       </nav>
 
@@ -800,7 +801,7 @@
 
 
     <!-- =====================================================
-         CUSTOMER CHECKOUT DETAILS
+         CUSTOMER CHECKOUT DETAILS (CONDITION 3: AMOUNT ADDED)
     ====================================================== -->
     <section id="quote" class="quote-section">
 
@@ -820,11 +821,13 @@
           </p>
 
           <div class="payment-notice">
-            <strong>School Project Demonstration</strong>
+            <strong>Automated Approval &amp; 3-Day Refund Policy</strong>
 
             <p>
-              This website demonstrates an order, payment-status, and
-              refund-request workflow. It does not process real payments.
+              Both you and CleanFlow Engineering will receive your order
+              confirmation and official invoice receipt via email. If you
+              cancel within <strong>3 days</strong>, a <strong>10% cancellation
+              fee</strong> is automatically deducted from your total bill.
             </p>
           </div>
         </div>
@@ -891,6 +894,19 @@
             placeholder="Describe your water quality needs..."
           ></textarea>
 
+          <!-- CONDITION 3: AMOUNT DISPLAYED AFTER CHECKOUT DETAILS -->
+          <div class="checkout-amount-summary" id="checkoutAmountSummary">
+            <div class="checkout-amount-row">
+              <span>Selected Service Package:</span>
+              <strong id="summaryServiceName">Not selected yet</strong>
+            </div>
+            <div class="checkout-amount-row total">
+              <span>Total Bill Amount (Customer &amp; Owner Copy):</span>
+              <strong id="summaryTotalAmount">₱0.00</strong>
+            </div>
+            <small>10% cancellation fee (<span id="summaryTenPercent">₱0.00</span>) applies if cancelled within 3 days.</small>
+          </div>
+
           <button
             type="submit"
             class="btn primary"
@@ -925,8 +941,17 @@
         </h2>
 
         <p class="payment-description">
-          Select a payment method for this school-project demonstration.
+          Select a payment method below. Your Total Bill Amount is shown for both you and the administrator.
         </p>
+      </div>
+
+      <!-- LIVE AMOUNT BANNER IN PAYMENT SECTION -->
+      <div class="payment-amount-banner">
+        <div>
+          <span>Total Bill Amount Due</span>
+          <small id="paymentBannerService">Select a service package in Checkout Details above</small>
+        </div>
+        <strong id="paymentBannerAmount">₱0.00</strong>
       </div>
 
       <!-- Payment method choices -->
@@ -956,7 +981,7 @@
           <span class="payment-option-content">
             <span class="payment-icon" aria-hidden="true">💳</span>
             <strong>Credit Card</strong>
-            <small>Simulated card checkout only</small>
+            <small>Instant card brand approval &amp; receipt</small>
           </span>
         </label>
 
@@ -970,7 +995,7 @@
           <span class="payment-option-content">
             <span class="payment-icon" aria-hidden="true">💳</span>
             <strong>Debit Card</strong>
-            <small>Simulated card checkout only</small>
+            <small>16-digit card checkout &amp; approval</small>
           </span>
         </label>
 
@@ -984,7 +1009,7 @@
           <span class="payment-option-content">
             <span class="payment-icon" aria-hidden="true">🏦</span>
             <strong>Online Bank Transfer</strong>
-            <small>Demo QR and manual verification</small>
+            <small>BDO, BPI, Landbank, Metrobank (16 digits)</small>
           </span>
         </label>
 
@@ -1011,132 +1036,200 @@
 
         <p class="qr-note">
           This is a placeholder QR code, not a working payment QR code.
-          Replace it only if you have an authorized payment QR for a real
-          payment arrangement.
         </p>
 
       </div>
 
 
-      <!-- ONLINE BANK TRANSFER QR -->
-      <div id="bankPayment" class="qr-payment" hidden>
+      <!-- CONDITION 1: ONLINE BANK TRANSFER (4 BANKS + 16 NUMBERS ONLY) -->
+      <div id="bankPayment" class="qr-payment bank-checkout-panel" hidden>
 
-        <h3>Pay with Online Bank Transfer</h3>
+        <h4>🏦 Online Bank Transfer</h4>
 
-        <p>
-          This area demonstrates where your bank QR code would appear.
-        </p>
+        <div class="payment-notice">
+          <strong>Select Your Bank &amp; Enter Your 16-Digit Card / Account Number</strong>
+          <p>
+            Choose from BDO, BPI, Landbank, or Metrobank. Card number must be strictly <strong>16 numbers only (no letters allowed)</strong>.
+          </p>
+        </div>
 
-        <img
-          src="https://placehold.co/250x250/e0f2fe/075985?text=Bank+QR"
-          alt="Placeholder bank transfer QR code for demonstration"
-          class="payment-qr"
-          width="250"
-          height="250"
-          loading="lazy"
+        <div class="brand-choice-group">
+          <span class="brand-choice-title">Select Online Bank:</span>
+          <div class="brand-choice-grid">
+            <label class="brand-pill">
+              <input type="radio" name="onlineBankChoice" value="BDO" checked>
+              <span>🏦 BDO (16 Digits)</span>
+            </label>
+            <label class="brand-pill">
+              <input type="radio" name="onlineBankChoice" value="BPI">
+              <span>🏦 BPI (16 Digits)</span>
+            </label>
+            <label class="brand-pill">
+              <input type="radio" name="onlineBankChoice" value="Landbank">
+              <span>🏦 Landbank (16 Digits)</span>
+            </label>
+            <label class="brand-pill">
+              <input type="radio" name="onlineBankChoice" value="Metrobank">
+              <span>🏦 Metrobank (16 Digits)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="bank-form-grid">
+          <label for="bankAccountName">Account / Cardholder Name</label>
+          <input
+            type="text"
+            id="bankAccountName"
+            name="bankAccountName"
+            placeholder="Enter account holder name"
+            maxlength="100"
+            autocomplete="off"
+          >
+
+          <label for="bankCardNumber" id="bankCardNumberLabel">BDO Card Number (16 Digits)</label>
+          <div>
+            <input
+              type="text"
+              id="bankCardNumber"
+              name="bankCardNumber"
+              inputmode="numeric"
+              maxlength="16"
+              minlength="16"
+              pattern="[0-9]{16}"
+              placeholder="16 numbers only (no letters allowed)"
+              autocomplete="off"
+            >
+            <small id="bankDigitCounter" class="digit-counter">0 / 16 digits (Numbers only, no letters)</small>
+          </div>
+        </div>
+
+        <p id="bankDemoResult" role="status" aria-live="polite"></p>
+
+      </div>
+
+
+      <!-- CONDITION 2: CREDIT / DEBIT CARD DEMO (WITH BRANDS & LIVE APPROVAL) -->
+      <div id="cardPayment" class="qr-payment" hidden>
+
+        <h4 id="cardCheckoutHeading">💳 Credit Card Checkout</h4>
+
+        <div class="payment-notice">
+          <strong>Direct Card Transaction Approval &amp; Invoice Receipt</strong>
+          <p>
+            Select your credit/debit card brand below. Card number must be strictly <strong>16 digits (numbers only, no letters)</strong>. An official approval &amp; invoice receipt will be sent directly to your email and to CleanFlow Engineering.
+          </p>
+        </div>
+
+        <div class="brand-choice-group full-col">
+          <span class="brand-choice-title">Select Card Brand / Network:</span>
+          <div class="brand-choice-grid">
+            <label class="brand-pill">
+              <input type="radio" name="cardBrandChoice" value="Visa" checked>
+              <span>💳 Visa</span>
+            </label>
+            <label class="brand-pill">
+              <input type="radio" name="cardBrandChoice" value="Mastercard">
+              <span>💳 Mastercard</span>
+            </label>
+            <label class="brand-pill">
+              <input type="radio" name="cardBrandChoice" value="JCB">
+              <span>💳 JCB</span>
+            </label>
+            <label class="brand-pill">
+              <input type="radio" name="cardBrandChoice" value="American Express">
+              <span>💳 American Express</span>
+            </label>
+          </div>
+        </div>
+
+        <label for="demoCardName">Cardholder Name</label>
+        <input
+          type="text"
+          id="demoCardName"
+          name="demoCardName"
+          placeholder="Name on card"
+          maxlength="100"
+          autocomplete="off"
+          required
         >
 
-        <p class="qr-note">
-          This is a placeholder QR code and cannot transfer money.
-        </p>
+        <label for="demoCardNumber">Card Number (16 Digits)</label>
+        <div>
+          <input
+            type="text"
+            id="demoCardNumber"
+            name="demoCardNumber"
+            inputmode="numeric"
+            maxlength="16"
+            minlength="16"
+            pattern="[0-9]{16}"
+            placeholder="16 numbers only (no letters)"
+            autocomplete="off"
+            required
+          >
+          <small id="cardDigitCounter" class="digit-counter">0 / 16 digits (Numbers only, no letters)</small>
+        </div>
+
+        <label for="demoCardExpiry">Expiration Date</label>
+        <input
+          type="text"
+          id="demoCardExpiry"
+          name="demoCardExpiry"
+          maxlength="5"
+          minlength="5"
+          placeholder="MM/YY"
+          pattern="(0[1-9]|1[0-2])/[0-9]{2}"
+          autocomplete="off"
+          required
+        >
+
+        <label for="demoCardCVV">Demo CVV (3 Digits)</label>
+        <input
+          type="password"
+          id="demoCardCVV"
+          name="demoCardCVV"
+          inputmode="numeric"
+          maxlength="3"
+          minlength="3"
+          placeholder="123"
+          pattern="[0-9]{3}"
+          autocomplete="off"
+          required
+        >
+
+        <p id="cardDemoResult" role="status" aria-live="polite"></p>
 
       </div>
-
-
-<!-- CREDIT / DEBIT CARD DEMO -->
-<div id="cardPayment" class="qr-payment" hidden>
-
-  <h3>💳 Card Checkout</h3>
-
-  <div class="payment-notice">
-    <strong>School Project Demonstration Only</strong>
-    <p>
-      This is a simulated card payment. No real money will be charged.
-    </p>
-  </div>
-
-  <label for="demoCardName">Cardholder Name</label>
-  <input
-    type="text"
-    id="demoCardName"
-    name="demoCardName"
-    maxlength="100"
-    autocomplete="off"
-    required
-  >
-
-  <label for="demoCardNumber">Card Number</label>
-  <input
-    type="text"
-    id="demoCardNumber"
-    name="demoCardNumber"
-    inputmode="numeric"
-    maxlength="16"
-    minlength="16"
-    pattern="[0-9]{16}"
-    autocomplete="off"
-    required
-  >
-
-  <label for="demoCardExpiry">Expiration Date</label>
-  <input
-    type="text"
-    id="demoCardExpiry"
-    name="demoCardExpiry"
-    maxlength="5"
-    minlength="5"
-    pattern="(0[1-9]|1[0-2])/[0-9]{2}"
-    autocomplete="off"
-    required
-  >
-
-  <label for="demoCardCVV">Demo CVV</label>
-  <input
-    type="password"
-    id="demoCardCVV"
-    name="demoCardCVV"
-    inputmode="numeric"
-    maxlength="3"
-    minlength="3"
-    pattern="[0-9]{3}"
-    autocomplete="off"
-    required
-  >
-
-  <p id="cardDemoResult" role="status" aria-live="polite"></p>
-
-</div>
 
 
       <!-- PAYMENT REFERENCE -->
-      <div class="payment-proof">
+      <div class="payment-proof" id="paymentReferenceGroup">
 
         <label for="paymentReference">
-          Payment Reference Number
-        
+          Payment Reference Number (Optional for Card / Auto-Generated on Approval)
         </label>
 
         <input
           type="text"
           id="paymentReference"
           name="paymentReference"
-          placeholder="Enter a demo reference number if available"
+          placeholder="Enter a reference number if paying via GCash"
           maxlength="100"
           autocomplete="off"
         >
 
         <small>
-          Do not enter bank login credentials, passwords, or PINs.
+          Do not enter real bank login credentials, passwords, or PINs.
         </small>
 
       </div>
 
 
       <!-- PAYMENT RECEIPT -->
-      <div class="payment-proof">
+      <div class="payment-proof" id="paymentProofGroup">
 
         <label for="paymentProof">
-          Upload Proof of Payment
+          Upload Proof of Payment (Required for GCash / Optional for 16-Digit Bank &amp; Card)
         </label>
 
         <input
@@ -1158,26 +1251,10 @@
       <!-- MANUAL VERIFICATION NOTICE -->
       <div class="payment-notice">
 
-        <strong>Payment Verification Notice</strong>
+        <strong>Transaction Approval &amp; 3-Day Cancellation Policy</strong>
 
         <p>
-          GCash and online bank transfer orders remain pending until
-          payment is manually reviewed. Uploading a receipt does not
-          automatically confirm that money was received.
-        </p>
-
-      </div>
-
-
-      <!-- DEMO PAYMENT NOTICE -->
-      <div class="payment-notice">
-
-        <strong>Demo Checkout Notice</strong>
-
-        <p>
-          This is a school-project demonstration. Card checkout is simulated,
-          and GCash/bank QR images are placeholders. The website does not
-          process actual card charges or transfer money.
+          Credit Card, Debit Card, and 16-Digit Online Bank Transfer orders generate an instant Transaction Approval &amp; Official Invoice Receipt emailed to both you and CleanFlow Engineering. Cancelling an order within <strong>3 days</strong> automatically deducts <strong>10% of the total bill</strong>.
         </p>
 
       </div>
@@ -1189,7 +1266,7 @@
         class="btn primary"
         id="submitDemoOrderButton"
       >
-        Submit Demo Order
+        Submit &amp; Authorize Payment
       </button>
 
       <p
@@ -1202,25 +1279,24 @@
 
 
     <!-- =====================================================
-         REFUND REQUEST
+         CONDITION 4: REFUND & ORDER CANCELLATION PORTAL (3-DAY / 10% FEE)
     ====================================================== -->
     <section id="refund" class="section">
 
       <div class="section-heading center">
-        <p class="eyebrow">CUSTOMER SUPPORT</p>
+        <p class="eyebrow">CUSTOMER ORDER &amp; REFUND PORTAL</p>
 
         <h2>
-          Request a
+          Cancel Order &amp; Request a
           <span>Refund</span>
         </h2>
 
         <p>
-          Submit your order details and reason so your refund request
-          can be reviewed.
+          Open this portal from your email link or enter your Order ID below to cancel your order. Cancelling within <strong>3 days</strong> deducts a <strong>10% fee</strong> from your total bill and automatically emails your Cancellation &amp; Refund Invoice Receipt.
         </p>
       </div>
 
-      <div class="quote-form reveal">
+      <div class="quote-form reveal" style="max-width:700px;margin:auto;">
 
         <form id="refundForm">
 
@@ -1247,19 +1323,44 @@
             required
           >
 
-          <label for="refundReason">Reason for Refund</label>
+          <label for="refundServicePackage">Order Service Package (For 10% Fee Calculation)</label>
+
+          <select id="refundServicePackage" name="refundService">
+            <option value="Basic Testing|500">Basic Testing — ₱500.00</option>
+            <option value="Complete Analysis|1500" selected>Complete Analysis — ₱1,500.00</option>
+            <option value="Water Quality Monitoring|2500">Water Quality Monitoring — ₱2,500.00</option>
+          </select>
+
+          <!-- LIVE 3-DAY 10% DEDUCTION BREAKDOWN -->
+          <div class="refund-calculation-box" id="refundCalculationBox">
+            <h4>Automated 3-Day Cancellation &amp; 10% Deduction Summary</h4>
+            <div class="checkout-amount-row">
+              <span>Original Total Bill:</span>
+              <strong id="refundOriginalAmount">₱1,500.00</strong>
+            </div>
+            <div class="checkout-amount-row deduction">
+              <span>Less 10% Cancellation Fee (Within 3 Days):</span>
+              <strong id="refundFeeAmount">-₱150.00</strong>
+            </div>
+            <div class="checkout-amount-row total">
+              <span>Net Refund Amount to Customer (90%):</span>
+              <strong id="refundNetAmount">₱1,350.00</strong>
+            </div>
+          </div>
+
+          <label for="refundReason">Reason for Cancellation / Refund</label>
 
           <textarea
             id="refundReason"
             name="reason"
             rows="4"
             maxlength="1000"
-            placeholder="Explain why you are requesting a refund"
+            placeholder="Explain why you are cancelling your order and requesting a refund"
             required
           ></textarea>
 
           <button type="submit" class="btn primary">
-            Submit Refund Request
+            Cancel Order &amp; Send Refund Invoice (10% Deduction)
           </button>
 
           <p
@@ -1270,12 +1371,10 @@
 
           <div class="payment-notice">
 
-            <strong>Refund Review Notice</strong>
+            <strong>3-Day / 10% Refund Invoice Policy</strong>
 
             <p>
-              Submitting a refund request does not guarantee approval.
-              This demonstration records requests for review but does not
-              send money back to a customer.
+              When you cancel your order within 3 days, 10% of the total bill is automatically deducted and an Official Cancellation &amp; Refund Invoice Receipt is sent to both your email and CleanFlow Engineering.
             </p>
 
           </div>
@@ -1396,6 +1495,53 @@
         Continue to Checkout
       </a>
 
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       OFFICIAL TRANSACTION APPROVAL & INVOICE RECEIPT MODAL
+  ====================================================== -->
+  <div
+    id="invoiceReceiptModal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="invoiceModalTitle"
+    hidden
+  >
+    <div class="modal-content invoice-modal-sheet" id="printableInvoiceSheet">
+      <button
+        type="button"
+        class="close-modal no-print"
+        onclick="closeInvoiceReceiptModal()"
+        aria-label="Close invoice receipt"
+      >
+        ×
+      </button>
+
+      <div class="invoice-header-top">
+        <div>
+          <span class="eyebrow">CLEANFLOW ENGINEERING — OFFICIAL INVOICE</span>
+          <h2 id="invoiceModalTitle">Transaction Approved &amp; Paid</h2>
+          <small>Dagupan City, Pangasinan • cleanflowengineer@gmail.com</small>
+        </div>
+        <span id="invoiceModalBadge" class="invoice-status-badge approved">APPROVED</span>
+      </div>
+
+      <div id="invoiceModalBody" class="invoice-body-rows"></div>
+
+      <div class="payment-notice" style="text-align:left;margin-top:16px;">
+        <strong>3-Day / 10% Cancellation &amp; Refund Policy</strong>
+        <p>
+          Cancelling an order within 3 days deducts 10% of the total bill as a holding/processing fee. A copy of this official receipt has been automatically emailed to both the Customer and CleanFlow Engineering.
+        </p>
+      </div>
+
+      <div class="invoice-modal-actions no-print">
+        <button type="button" class="btn outline" onclick="window.print()">🖨️ Print / Save PDF</button>
+        <button type="button" class="btn primary" onclick="closeInvoiceReceiptModal()">Done</button>
+      </div>
     </div>
   </div>
 
