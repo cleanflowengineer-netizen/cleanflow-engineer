@@ -3,8 +3,7 @@
    CLEANFLOW ENGINEERING
    School Project Demo
    EmailJS + Node.js Backend
-   Manual Payment Verification + Card Demo
-   No real card processing or money transfers
+   Manual Payment Verification + Refund Requests
 ========================================== */
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -21,7 +20,6 @@ document.addEventListener("DOMContentLoaded", function () {
     let emailJSReady = false;
     let orderSubmissionInProgress = false;
     let refundSubmissionInProgress = false;
-    let simulatedCardResult = null;
 
     if (window.emailjs) {
         try {
@@ -34,7 +32,9 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("EmailJS initialization failed:", error);
         }
     } else {
-        console.error("EmailJS SDK missing. Check index.html.");
+        console.error(
+            "EmailJS SDK missing. Check the script tags in index.html."
+        );
     }
 
     /* 2. GENERAL HELPERS */
@@ -53,12 +53,12 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function createRequestKey() {
-        if (window.crypto &&
-            typeof window.crypto.randomUUID === "function") {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") {
             return window.crypto.randomUUID();
         }
 
         return "cf-" + Date.now() + "-" +
+            Math.random().toString(36).slice(2) + "-" +
             Math.random().toString(36).slice(2);
     }
 
@@ -83,20 +83,25 @@ document.addEventListener("DOMContentLoaded", function () {
             console.error("Backend connection failed:", error);
 
             throw new Error(
-                "Cannot connect to the CleanFlow backend. " +
-                "Check your Render deployment and API routes."
+                "Cannot connect to the CleanFlow backend. Check that " +
+                "server.js is running and that the website preview uses " +
+                "the same origin as the backend."
             );
         }
 
         const responseText = await response.text();
+
+        console.log("API URL:", url);
+        console.log("API status:", response.status);
+        console.log("API response:", responseText);
+
         let result;
 
         try {
             result = JSON.parse(responseText);
         } catch {
             throw new Error(
-                "The server returned an unexpected response. " +
-                "Check the backend API route."
+                "The server returned an unexpected response. Check the API route in server.js."
             );
         }
 
@@ -165,6 +170,7 @@ document.addEventListener("DOMContentLoaded", function () {
         );
     }
 
+    // One admin-template attempt and one customer-template attempt per event.
     async function sendBothEmails(adminParameters, customerParameters) {
         const results = await Promise.allSettled([
             sendEmail(EMAILJS_ADMIN_TEMPLATE_ID, adminParameters),
@@ -174,11 +180,15 @@ document.addEventListener("DOMContentLoaded", function () {
         const adminSent = results[0].status === "fulfilled";
         const customerSent = results[1].status === "fulfilled";
 
-        if (!adminSent) {
+        if (adminSent) {
+            console.log("Admin email accepted by EmailJS.");
+        } else {
             console.error("Admin email failed:", results[0].reason);
         }
 
-        if (!customerSent) {
+        if (customerSent) {
+            console.log("Customer email accepted by EmailJS.");
+        } else {
             console.error("Customer email failed:", results[1].reason);
         }
 
@@ -188,19 +198,19 @@ document.addEventListener("DOMContentLoaded", function () {
     function emailStatusMessage(results, type) {
         if (results.adminSent && results.customerSent) {
             return "\nAdmin and customer " + type +
-                " email requests were accepted by EmailJS.";
+                " emails were accepted by EmailJS.";
         }
 
         if (!results.adminSent && !results.customerSent) {
             return "\nThe " + type +
-                " was saved, but both email attempts failed. Check EmailJS Email History.";
+                " was saved, but both email attempts failed. Check the browser console and EmailJS Email History.";
         }
 
         if (!results.adminSent) {
-            return "\nThe customer email was accepted, but the admin email failed.";
+            return "\nThe customer email was accepted, but the admin email failed. Check the admin template settings and EmailJS Email History.";
         }
 
-        return "\nThe admin email was accepted, but the customer email failed.";
+        return "\nThe admin email was accepted, but the customer email failed. Check the customer template settings and EmailJS Email History.";
     }
 
     /* 4. MOBILE NAVIGATION */
@@ -279,11 +289,19 @@ document.addEventListener("DOMContentLoaded", function () {
         const quoteSection = byId("quote");
 
         if (serviceSelect) {
-            const option = Array.from(serviceSelect.options).find(
+            let option = Array.from(serviceSelect.options).find(
                 function (item) {
                     return item.value === packageName;
                 }
             );
+
+            if (!option && packageName === "Monitoring Plan") {
+                option = Array.from(serviceSelect.options).find(
+                    function (item) {
+                        return item.value === "Water Quality Monitoring";
+                    }
+                );
+            }
 
             if (option) serviceSelect.value = option.value;
         }
@@ -318,6 +336,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     behavior: "smooth",
                     block: "start"
                 });
+            } else {
+                console.error(
+                    "Payment section not found. Check the section ID in index.html."
+                );
             }
         });
     }
@@ -335,11 +357,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
             showMessage(
                 quoteResult,
-                "Checkout details completed. Choose a payment method below.",
+                "Checkout details completed. Continue to payment to select a payment method and upload your receipt.",
                 true
             );
 
-            const paymentSection = byId("payment");
+            const paymentSection =
+                byId("payment") ||
+                byId("paymentSection") ||
+                byId("checkout");
 
             if (paymentSection) {
                 paymentSection.scrollIntoView({
@@ -350,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    /* 9. PAYMENT METHOD + CARD DEMO */
+    /* 9. PAYMENT METHOD SELECTION */
 
     const paymentMethods = document.querySelectorAll(
         'input[name="paymentMethod"]'
@@ -361,25 +386,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const cardPayment = byId("cardPayment");
     const paymentResult = byId("paymentResult");
 
-    const demoCardType = byId("demoCardType");
-    const demoCardResult = byId("demoCardResult");
-    const runCardDemoButton = byId("runCardDemoButton");
-    const cardDemoResult = byId("cardDemoResult");
-
-    function resetCardDemo() {
-        simulatedCardResult = null;
-
-        if (demoCardResult) demoCardResult.value = "";
-        if (cardDemoResult) cardDemoResult.textContent = "";
-    }
-
     function updatePaymentMethod() {
         const selected = document.querySelector(
             'input[name="paymentMethod"]:checked'
         );
 
         const value = selected ? selected.value : "";
-        const isCard = ["Credit Card", "Debit Card"].includes(value);
 
         if (gcashPayment) {
             gcashPayment.hidden = value !== "GCash";
@@ -390,16 +402,17 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (cardPayment) {
-            cardPayment.hidden = !isCard;
+            cardPayment.hidden =
+                !["Credit Card", "Debit Card"].includes(value);
         }
 
-        resetCardDemo();
-
-        if (demoCardType && isCard) {
-            demoCardType.value = value;
-        }
-
-        if (paymentResult) {
+        if (["Credit Card", "Debit Card"].includes(value)) {
+            showMessage(
+                paymentResult,
+                "Credit and debit card payments are not available in this demo. Please choose GCash or Online Bank Transfer.",
+                false
+            );
+        } else if (paymentResult) {
             paymentResult.textContent = "";
         }
     }
@@ -407,59 +420,6 @@ document.addEventListener("DOMContentLoaded", function () {
     paymentMethods.forEach(function (method) {
         method.addEventListener("change", updatePaymentMethod);
     });
-
-    if (runCardDemoButton) {
-        runCardDemoButton.addEventListener("click", function () {
-            const selected = document.querySelector(
-                'input[name="paymentMethod"]:checked'
-            );
-
-            if (!selected ||
-                !["Credit Card", "Debit Card"].includes(selected.value)) {
-                showMessage(
-                    cardDemoResult,
-                    "Select Credit Card or Debit Card first.",
-                    false
-                );
-                return;
-            }
-
-            if (!demoCardType ||
-                demoCardType.value !== selected.value) {
-                showMessage(
-                    cardDemoResult,
-                    "Choose the same card type as your selected payment method.",
-                    false
-                );
-                return;
-            }
-
-            if (!demoCardResult || !demoCardResult.value) {
-                showMessage(
-                    cardDemoResult,
-                    "Choose a simulated result.",
-                    false
-                );
-                return;
-            }
-
-            simulatedCardResult = demoCardResult.value;
-
-            if (simulatedCardResult === "success") {
-                showMessage(
-                    cardDemoResult,
-                    "DEMO SUCCESS: Simulated only. No money was charged and no real payment was verified.",
-                    true
-                );
-            } else {
-                showMessage(
-                    cardDemoResult,
-                    "DEMO DECLINED: Simulated only. No money was charged.",
-                    false
-                );
-            }
-        });
-    }
 
     updatePaymentMethod();
 
@@ -471,7 +431,11 @@ document.addEventListener("DOMContentLoaded", function () {
         submitOrderButton.addEventListener("click", async function (event) {
             event.preventDefault();
 
-            if (orderSubmissionInProgress) return;
+            // Prevent overlapping clicks while a submission is processing.
+            if (orderSubmissionInProgress) {
+                console.warn("Duplicate order submission blocked.");
+                return;
+            }
 
             const nameInput = byId("quoteName");
             const emailInput = byId("quoteEmail");
@@ -481,13 +445,17 @@ document.addEventListener("DOMContentLoaded", function () {
             const referenceInput = byId("paymentReference");
             const proofInput = byId("paymentProof");
 
-            if (!nameInput || !emailInput || !serviceInput ||
+            if (
+                !nameInput ||
+                !emailInput ||
+                !serviceInput ||
                 !nameInput.value.trim() ||
                 !emailInput.value.trim() ||
-                !serviceInput.value) {
+                !serviceInput.value
+            ) {
                 showMessage(
                     paymentResult,
-                    "Complete your name, email, and service package first.",
+                    "Please complete your name, email address, and service package in the checkout details first.",
                     false
                 );
 
@@ -499,7 +467,11 @@ document.addEventListener("DOMContentLoaded", function () {
             }
 
             if (!emailInput.checkValidity()) {
-                showMessage(paymentResult, "Enter a valid email address.", false);
+                showMessage(
+                    paymentResult,
+                    "Please enter a valid email address.",
+                    false
+                );
                 emailInput.focus();
                 return;
             }
@@ -509,84 +481,77 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             if (!selectedMethod) {
-                showMessage(paymentResult, "Select a payment method.", false);
+                showMessage(
+                    paymentResult,
+                    "Please select a payment method.",
+                    false
+                );
                 return;
             }
 
             const paymentMethod = selectedMethod.value;
-            const isCardDemo =
-                ["Credit Card", "Debit Card"].includes(paymentMethod);
 
-            if (isCardDemo && simulatedCardResult !== "success") {
+            if (["Credit Card", "Debit Card"].includes(paymentMethod)) {
                 showMessage(
                     paymentResult,
-                    "Run the card demo and choose a successful simulated result before submitting.",
+                    "Card payments are unavailable. Choose GCash or Online Bank Transfer.",
                     false
                 );
                 return;
             }
 
-            if (isCardDemo && demoCardType &&
-                demoCardType.value !== paymentMethod) {
+            const receiptFile = proofInput?.files?.[0];
+
+            if (!receiptFile) {
                 showMessage(
                     paymentResult,
-                    "The demo card type does not match your selected payment method.",
-                    false
-                );
-                return;
-            }
-
-            const receiptFile = proofInput?.files?.[0] || null;
-
-            if (!isCardDemo && !receiptFile) {
-                showMessage(
-                    paymentResult,
-                    "Upload your payment receipt or screenshot.",
+                    "Please upload your payment receipt or screenshot.",
                     false
                 );
                 proofInput?.focus();
                 return;
             }
 
-            if (receiptFile) {
-                const allowedTypes = [
-                    "image/jpeg",
-                    "image/png",
-                    "image/webp",
-                    "application/pdf"
-                ];
+            const allowedTypes = [
+                "image/jpeg",
+                "image/png",
+                "image/webp",
+                "application/pdf"
+            ];
 
-                if (!allowedTypes.includes(receiptFile.type)) {
-                    showMessage(
-                        paymentResult,
-                        "Upload a JPG, PNG, WEBP, or PDF receipt.",
-                        false
-                    );
-                    return;
-                }
-
-                if (receiptFile.size > 4 * 1024 * 1024) {
-                    showMessage(
-                        paymentResult,
-                        "The receipt must be 4 MB or smaller.",
-                        false
-                    );
-                    return;
-                }
+            if (!allowedTypes.includes(receiptFile.type)) {
+                showMessage(
+                    paymentResult,
+                    "Upload a JPG, PNG, WEBP, or PDF receipt.",
+                    false
+                );
+                return;
             }
 
+            if (receiptFile.size > 4 * 1024 * 1024) {
+                showMessage(
+                    paymentResult,
+                    "The receipt must be 4 MB or smaller.",
+                    false
+                );
+                return;
+            }
+
+            // Lock immediately, before reading the receipt or sending a request.
             orderSubmissionInProgress = true;
 
             const originalButtonText = submitOrderButton.textContent;
             submitOrderButton.disabled = true;
             submitOrderButton.textContent = "Submitting order...";
 
-            showMessage(paymentResult, "Saving your demo order...", true);
+            showMessage(
+                paymentResult,
+                "Saving your order and receipt...",
+                true
+            );
 
             try {
-                const receiptDataURL = receiptFile
-                    ? await fileToDataURL(receiptFile)
-                    : null;
+                const receiptDataURL = await fileToDataURL(receiptFile);
 
                 const orderData = {
                     customerName: nameInput.value.trim(),
@@ -598,29 +563,20 @@ document.addEventListener("DOMContentLoaded", function () {
                         ? referenceInput.value.trim()
                         : "",
                     notes: notesInput ? notesInput.value.trim() : "",
-
-                    // Explicitly label simulated card orders.
-                    paymentMode: isCardDemo
-                        ? "SIMULATED_DEMO"
-                        : "MANUAL_VERIFICATION",
-
-                    // This is user-provided demo data, not proof of payment.
-                    demoPaymentResult: isCardDemo
-                        ? simulatedCardResult
-                        : null,
-
-                    receipt: receiptFile
-                        ? {
-                            name: receiptFile.name,
-                            dataUrl: receiptDataURL
-                        }
-                        : null
+                    receipt: {
+                        name: receiptFile.name,
+                        dataUrl: receiptDataURL
+                    }
                 };
+
+                // One unique key per checkout attempt, reused for a retry.
+                // The current UI does not automatically retry a failed request.
+                const idempotencyKey = createRequestKey();
 
                 const result = await sendJSON(
                     "/api/orders",
                     orderData,
-                    createRequestKey()
+                    idempotencyKey
                 );
 
                 const orderId =
@@ -637,19 +593,22 @@ document.addEventListener("DOMContentLoaded", function () {
                         : "Not provided",
                     order_id: orderId,
                     service: serviceInput.value,
-                    payment_method: paymentMethod +
-                        (isCardDemo ? " (SIMULATED DEMO)" : ""),
+                    payment_method: paymentMethod,
                     payment_reference: referenceInput
                         ? referenceInput.value.trim()
                         : "Not provided",
                     notes: notesInput
                         ? notesInput.value.trim()
                         : "No additional instructions provided.",
-                    status: "Pending Verification"
+                    status: result.status || "Pending Verification"
                 };
 
-                let emailMessage = "\nEmail notifications were not attempted.";
+                let emailMessage =
+                    "\nEmail notifications were not attempted.";
 
+                // Exactly one call to sendBothEmails per successful order
+                // in this script instance. This makes one admin-template
+                // attempt and one customer-template attempt.
                 if (emailJSReady) {
                     const emailResults = await sendBothEmails(
                         makeEmailParameters(
@@ -664,10 +623,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         )
                     );
 
-                    emailMessage = emailStatusMessage(emailResults, "order");
+                    emailMessage =
+                        emailStatusMessage(emailResults, "order");
                 } else {
                     emailMessage =
-                        "\nThe order was saved, but EmailJS did not initialize.";
+                        "\nThe order was saved, but EmailJS did not initialize. Check the EmailJS SDK in index.html.";
                 }
 
                 let message =
@@ -677,31 +637,33 @@ document.addEventListener("DOMContentLoaded", function () {
                     message += "\nOrder reference: " + orderId;
 
                     const refundOrderId = byId("refundOrderId");
-                    if (refundOrderId) refundOrderId.value = orderId;
+                    if (refundOrderId) {
+                        refundOrderId.value = orderId;
+                    }
                 }
 
-                if (isCardDemo) {
-                    message +=
-                        "\nCard result: SIMULATED SUCCESS only." +
-                        "\nNo money was charged. This is not a real payment confirmation.";
-                } else {
-                    message +=
-                        "\nStatus: Pending Verification. An administrator must review the receipt.";
-                }
+                message +=
+                    "\nStatus: Pending Verification. The administrator must review the receipt. Payment is not automatically verified.";
 
-                message += emailMessage;
-
-                showMessage(paymentResult, message, true);
+                showMessage(
+                    paymentResult,
+                    message + emailMessage,
+                    true
+                );
 
                 const refundEmail = byId("refundEmail");
+
                 if (refundEmail) {
                     refundEmail.value = emailInput.value.trim();
                 }
 
-                if (proofInput) proofInput.value = "";
+                if (proofInput) {
+                    proofInput.value = "";
+                }
 
             } catch (error) {
                 console.error("Order submission error:", error);
+
                 showMessage(
                     paymentResult,
                     error.message || "Could not submit your order.",
@@ -725,7 +687,11 @@ document.addEventListener("DOMContentLoaded", function () {
         refundForm.addEventListener("submit", async function (event) {
             event.preventDefault();
 
-            if (refundSubmissionInProgress) return;
+            if (refundSubmissionInProgress) {
+                console.warn("Duplicate refund submission blocked.");
+                return;
+            }
+
             if (!refundForm.reportValidity()) return;
 
             const orderId = byId("refundOrderId")?.value.trim() || "";
@@ -735,14 +701,18 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!orderId || !customerEmail || !reason) {
                 showMessage(
                     refundResult,
-                    "Enter the order ID, email address, and refund reason.",
+                    "Enter your order reference, email address, and refund reason.",
                     false
                 );
                 return;
             }
 
             if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
-                showMessage(refundResult, "Enter a valid email address.", false);
+                showMessage(
+                    refundResult,
+                    "Enter a valid email address.",
+                    false
+                );
                 return;
             }
 
@@ -760,7 +730,11 @@ document.addEventListener("DOMContentLoaded", function () {
                 refundButton.textContent = "Submitting request...";
             }
 
-            showMessage(refundResult, "Submitting refund request...", true);
+            showMessage(
+                refundResult,
+                "Submitting refund request...",
+                true
+            );
 
             try {
                 const result = await sendJSON(
@@ -810,10 +784,11 @@ document.addEventListener("DOMContentLoaded", function () {
                         )
                     );
 
-                    emailMessage = emailStatusMessage(
-                        emailResults,
-                        "refund request"
-                    );
+                    emailMessage =
+                        emailStatusMessage(
+                            emailResults,
+                            "refund request"
+                        );
                 } else {
                     emailMessage =
                         "\nThe refund was saved, but EmailJS is not initialized.";
@@ -827,12 +802,17 @@ document.addEventListener("DOMContentLoaded", function () {
                 }
 
                 message +=
-                    "\nNo money has been refunded automatically. The administrator must review the request.";
+                    "\nNo money has been refunded automatically. The administrator must review the request and handle any actual refund separately.";
 
-                showMessage(refundResult, message + emailMessage, true);
+                showMessage(
+                    refundResult,
+                    message + emailMessage,
+                    true
+                );
 
             } catch (error) {
                 console.error("Refund request error:", error);
+
                 showMessage(
                     refundResult,
                     error.message || "Could not submit your refund request.",
@@ -860,10 +840,15 @@ document.addEventListener("DOMContentLoaded", function () {
             console.log("CleanFlow health response:", body);
 
             if (!response.ok) {
-                throw new Error("Health endpoint returned HTTP " + response.status);
+                throw new Error(
+                    "Health endpoint returned HTTP " + response.status
+                );
             }
         })
         .catch(function (error) {
-            console.warn("Backend health check failed. Verify your backend.", error);
+            console.warn(
+                "Backend health check failed. Verify server.js and the OneCompiler preview.",
+                error
+            );
         });
 });
