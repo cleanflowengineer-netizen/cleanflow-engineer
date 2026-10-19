@@ -1,37 +1,58 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>CleanFlow Engineering | Water Quality Solutions</title>
-  <meta name="description" content="CleanFlow Engineering provides industrial water quality testing, laboratory analysis, treatment recommendations, and water treatment chemical solutions.">
+
+  <meta
+    name="description"
+    content="CleanFlow Engineering provides industrial water quality testing, laboratory analysis, treatment recommendations, and water treatment chemical solutions."
+  >
+
+  <meta name="theme-color" content="#075985">
 
   <link rel="stylesheet" href="styles.css">
 
-  <!-- Load EmailJS before your website JavaScript -->
+  <!-- EmailJS must load before script.js -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="script.js" defer></script>
 </head>
 
 <body>
 
-  <!-- NAVIGATION -->
+  <!-- =====================================================
+       NAVIGATION
+  ====================================================== -->
   <header class="header">
     <div class="nav-container">
-      <a href="#home" class="logo">
-        <img src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/logo.png"
-             alt="CleanFlow Engineering" width="90">
+
+      <a href="#home" class="logo" aria-label="CleanFlow Engineering home">
+        <img
+          src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/logo.png"
+          alt="CleanFlow Engineering logo"
+          width="90"
+        >
+
         <div>
           <strong>CleanFlow</strong>
           <small>ENGINEERING</small>
         </div>
       </a>
 
-      <button class="menu-toggle" id="menuToggle" type="button"
-              aria-label="Toggle navigation">☰</button>
+      <button
+        class="menu-toggle"
+        id="menuToggle"
+        type="button"
+        aria-label="Toggle navigation"
+        aria-controls="navMenu"
+        aria-expanded="false"
+      >
+        ☰
+      </button>
 
-      <nav id="navMenu">
+      <nav id="navMenu" aria-label="Main navigation">
         <a href="#home">Home</a>
         <a href="#about">About</a>
         <a href="#services">Services</a>
@@ -39,685 +60,1342 @@
         <a href="#gallery">Gallery</a>
         <a href="#industries">Industries</a>
         <a href="#business">Business Model</a>
+        <a href="#packages">Packages</a>
         <a href="#contact">Contact</a>
       </nav>
+
     </div>
   </header>
 
-  <!-- HERO -->
-  <section id="home" class="hero">
-    <div class="hero-content">
-      <div class="hero-text reveal">
-        <div class="badge">CHEMICAL ENGINEERING WATER SOLUTIONS</div>
-        <h1>Smarter Water Treatment.
-          <span>Cleaner Future.</span>
-        </h1>
-        <p>
-          CleanFlow Engineering provides industrial water quality testing,
-          laboratory analysis, customized treatment recommendations, and
-          water treatment chemical solutions.
-        </p>
-        <div class="hero-buttons">
-          <a href="#services" class="btn primary">Explore Services</a>
-          <a href="#packages" class="btn outline">Check Out Services</a>
-        </div>
-      </div>
 
-      <div class="hero-visual reveal">
-        <div class="water-circle">
-          <div class="big-drop">💧</div>
-          <h3>CleanFlow Approach</h3>
-          <p>Test • Analyze • Treat • Monitor</p>
-        </div>
-      </div>
-    </div>
-  </section>
+  <!-- =====================================================
+       HERO
+  ====================================================== -->
+  <main>
 
-  <!-- STATS -->
-  <section class="stats">
-    <div class="stat"><strong>01</strong><span>Water Testing</span></div>
-    <div class="stat"><strong>02</strong><span>Laboratory Analysis</span></div>
-    <div class="stat"><strong>03</strong><span>Treatment Solutions</span></div>
-    <div class="stat"><strong>04</strong><span>Monitoring</span></div>
-  </section>
+    <section id="home" class="hero">
+      <div class="hero-content">
 
-  <!-- ABOUT -->
-  <section id="about" class="section">
-    <div class="section-heading reveal">
-      <p class="eyebrow">ABOUT CLEANFLOW</p>
-      <h2>Chemical Engineering for
-        <span>Better Water Management</span>
-      </h2>
-    </div>
+        <div class="hero-text reveal">
+          <div class="badge">CHEMICAL ENGINEERING WATER SOLUTIONS</div>
 
-    <div class="about-grid">
-      <div class="about-text reveal">
-        <p>
-          Water is an important resource in manufacturing, processing,
-          cleaning, cooling, and other industrial operations.
-        </p>
-        <p>
-          Poor water quality can contribute to equipment corrosion, scaling
-          in pipelines and boilers, decreased production efficiency, higher
-          maintenance costs, and environmental concerns.
-        </p>
-        <p>
-          CleanFlow Engineering addresses these challenges by combining
-          water quality testing with customized water treatment chemical
-          solutions.
-        </p>
-      </div>
+          <h1>
+            Smarter Water Treatment.
+            <span>Cleaner Future.</span>
+          </h1>
 
-      <div class="vision-mission-container">
-        <div class="vision-card reveal">
-          <div class="vision-icon">🌎</div>
-          <h3>OUR VISION</h3>
           <p>
-            Our goal is to help industries make better water treatment
-            decisions through laboratory-based analysis and chemical
-            engineering expertise.
+            CleanFlow Engineering provides industrial water quality testing,
+            laboratory analysis, customized treatment recommendations, and
+            water treatment chemical solutions.
+          </p>
+
+          <div class="hero-buttons">
+            <a href="#services" class="btn primary">
+              Explore Services
+            </a>
+
+            <a href="#packages" class="btn outline">
+              Check Our Packages
+            </a>
+          </div>
+        </div>
+
+        <div class="hero-visual reveal">
+          <div class="water-circle">
+            <div class="big-drop" aria-hidden="true">💧</div>
+            <h3>CleanFlow Approach</h3>
+            <p>Test • Analyze • Treat • Monitor</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         STATS
+    ====================================================== -->
+    <section class="stats" aria-label="Our process at a glance">
+      <div class="stat">
+        <strong>01</strong>
+        <span>Water Testing</span>
+      </div>
+
+      <div class="stat">
+        <strong>02</strong>
+        <span>Laboratory Analysis</span>
+      </div>
+
+      <div class="stat">
+        <strong>03</strong>
+        <span>Treatment Solutions</span>
+      </div>
+
+      <div class="stat">
+        <strong>04</strong>
+        <span>Monitoring</span>
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         ABOUT
+    ====================================================== -->
+    <section id="about" class="section">
+
+      <div class="section-heading reveal">
+        <p class="eyebrow">ABOUT CLEANFLOW</p>
+
+        <h2>
+          Chemical Engineering for
+          <span>Better Water Management</span>
+        </h2>
+      </div>
+
+      <div class="about-grid">
+
+        <div class="about-text reveal">
+          <p>
+            Water is an important resource in manufacturing, processing,
+            cleaning, cooling, and other industrial operations.
+          </p>
+
+          <p>
+            Poor water quality can contribute to equipment corrosion,
+            scaling in pipelines and boilers, decreased production
+            efficiency, higher maintenance costs, and environmental concerns.
+          </p>
+
+          <p>
+            CleanFlow Engineering addresses these challenges by combining
+            water quality testing with customized water treatment chemical
+            solutions.
           </p>
         </div>
 
-        <div class="mission-card reveal">
-          <div class="mission-icon">💧</div>
-          <h3>OUR MISSION</h3>
-          <p>
-            To provide reliable water quality information and practical
-            treatment solutions that help industries manage water more
-            effectively.
-          </p>
+        <div class="vision-mission-container">
+
+          <div class="vision-card reveal">
+            <div class="vision-icon" aria-hidden="true">🌎</div>
+
+            <h3>OUR VISION</h3>
+
+            <p>
+              Our goal is to help industries make better water treatment
+              decisions through laboratory-based analysis and chemical
+              engineering expertise.
+            </p>
+          </div>
+
+          <div class="mission-card reveal">
+            <div class="mission-icon" aria-hidden="true">💧</div>
+
+            <h3>OUR MISSION</h3>
+
+            <p>
+              To provide reliable water quality information and practical
+              treatment solutions that help industries manage water more
+              effectively.
+            </p>
+          </div>
+
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- SERVICES -->
-  <section id="services" class="section light">
-    <div class="section-heading center reveal">
-      <p class="eyebrow">OUR SERVICES</p>
-      <h2>Complete Water Quality <span>Solutions</span></h2>
-      <p>From laboratory testing to treatment recommendations and monitoring.</p>
-    </div>
 
-    <div class="service-grid">
-      <div class="service-card reveal">
-        <div class="service-icon">🔬</div>
-        <h3>Water Quality Testing</h3>
-        <p>Laboratory testing to determine the quality and characteristics of industrial water samples.</p>
-        <ul>
-          <li>Physical testing</li>
-          <li>Chemical testing</li>
-          <li>Microbiological testing</li>
-          <li>Laboratory reporting</li>
-        </ul>
+    <!-- =====================================================
+         SERVICES
+    ====================================================== -->
+    <section id="services" class="section light">
+
+      <div class="section-heading center reveal">
+        <p class="eyebrow">OUR SERVICES</p>
+
+        <h2>
+          Complete Water Quality
+          <span>Solutions</span>
+        </h2>
+
+        <p>
+          From laboratory testing to treatment recommendations and monitoring.
+        </p>
       </div>
 
-      <div class="service-card featured reveal">
-        <div class="popular">CORE SERVICE</div>
-        <div class="service-icon">⚗️</div>
-        <h3>Water Treatment Chemicals</h3>
-        <p>Appropriate treatment chemicals selected according to laboratory findings and client requirements.</p>
-        <ul>
-          <li>Coagulants</li>
-          <li>Flocculants</li>
-          <li>Disinfectants</li>
-          <li>pH-control chemicals</li>
-          <li>Corrosion inhibitors</li>
-          <li>Antiscalants</li>
-        </ul>
-      </div>
+      <div class="service-grid">
 
-      <div class="service-card reveal">
-        <div class="service-icon">🧪</div>
-        <h3>Laboratory Services</h3>
-        <p>Laboratory analysis and interpretation of water quality results.</p>
-        <ul>
-          <li>Sample preparation</li>
-          <li>Laboratory analysis</li>
-          <li>Results interpretation</li>
-          <li>Technical reports</li>
-        </ul>
-      </div>
+        <div class="service-card reveal">
+          <div class="service-icon" aria-hidden="true">🔬</div>
 
-      <div class="service-card reveal">
-        <div class="service-icon">👨‍🔬</div>
-        <h3>Technical Consultation</h3>
-        <p>Chemical engineering guidance for industrial water treatment decisions.</p>
-        <ul>
-          <li>Water quality interpretation</li>
-          <li>Treatment recommendations</li>
-          <li>Chemical selection</li>
-          <li>Technical support</li>
-        </ul>
-      </div>
-
-      <div class="service-card reveal">
-        <div class="service-icon">📊</div>
-        <h3>Water Quality Monitoring</h3>
-        <p>Follow-up testing to evaluate the effectiveness of implemented treatment.</p>
-        <ul>
-          <li>Follow-up testing</li>
-          <li>Performance evaluation</li>
-          <li>Regular monitoring</li>
-          <li>Treatment adjustment</li>
-        </ul>
-      </div>
-
-      <div class="service-card reveal">
-        <div class="service-icon">💧</div>
-        <h3>On-Site Water Sampling</h3>
-        <p>Collection of water samples from industrial facilities for laboratory analysis.</p>
-        <ul>
-          <li>On-site sampling</li>
-          <li>Sample labeling</li>
-          <li>Sample handling</li>
-          <li>Laboratory submission</li>
-        </ul>
-      </div>
-    </div>
-  </section>
-
-  <!-- PROCESS -->
-  <section id="process" class="section">
-    <div class="section-heading center reveal">
-      <p class="eyebrow">OUR PROCESS</p>
-      <h2>Test. Analyze. Treat. <span>Monitor.</span></h2>
-      <p>Our four-step approach connects laboratory analysis with water treatment solutions.</p>
-    </div>
-
-    <div class="process-grid">
-      <div class="process-card reveal">
-        <div class="process-number">01</div>
-        <h3>TEST</h3>
-        <p>Collect water samples and perform the necessary physical, chemical, and microbiological tests.</p>
-      </div>
-      <div class="process-card reveal">
-        <div class="process-number">02</div>
-        <h3>ANALYZE</h3>
-        <p>Review laboratory results and identify the client's specific water quality concerns.</p>
-      </div>
-      <div class="process-card reveal">
-        <div class="process-number">03</div>
-        <h3>TREAT</h3>
-        <p>Recommend and supply appropriate water treatment chemicals based on the findings.</p>
-      </div>
-      <div class="process-card reveal">
-        <div class="process-number">04</div>
-        <h3>MONITOR</h3>
-        <p>Conduct follow-up testing and evaluate treatment effectiveness.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- GALLERY -->
-  <section id="gallery" class="section gallery-section">
-    <div class="section-heading center">
-      <p class="eyebrow">OUR GALLERY</p>
-      <h2>Explore Our <span>Work</span></h2>
-      <p>Discover laboratory testing, water treatment solutions, and engineering activities at CleanFlow Engineering.</p>
-    </div>
-
-    <div class="gallery-grid">
-      <div class="gallery-item">
-        <img src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/b95dcc70-0251-443b-ba4c-55a08d18af85.jfif"
-             alt="Laboratory equipment for water quality testing" loading="lazy">
-        <div class="gallery-caption">
           <h3>Water Quality Testing</h3>
-          <p>Laboratory analysis and sample testing</p>
-        </div>
-      </div>
 
-      <div class="gallery-item">
-        <img src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/1b627b2f-4593-44ff-87fb-0150d31a6ee7.jfif"
-             alt="Scientific laboratory research" loading="lazy">
-        <div class="gallery-caption">
-          <h3>Laboratory Analysis</h3>
-          <p>Examining samples and evaluating results</p>
-        </div>
-      </div>
-
-      <div class="gallery-item">
-        <img src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/08d7efa3-a4ee-46c0-a98a-ca34024b6de0.jfif"
-             alt="Engineering and technical equipment" loading="lazy">
-        <div class="gallery-caption">
-          <h3>Engineering Solutions</h3>
-          <p>Technical evaluation and engineering work</p>
-        </div>
-      </div>
-
-      <div class="gallery-item">
-        <img src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/b728f882-3cee-445f-8a1d-1b3962988d9c.jfif"
-             alt="Industrial facility and equipment" loading="lazy">
-        <div class="gallery-caption">
-          <h3>Industrial Applications</h3>
-          <p>Supporting industrial water management</p>
-        </div>
-      </div>
-
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?auto=format&fit=crop&w=800&q=80"
-             alt="Clean flowing water in nature" loading="lazy">
-        <div class="gallery-caption">
-          <h3>Water Resources</h3>
-          <p>Promoting responsible water management</p>
-        </div>
-      </div>
-
-      <div class="gallery-item">
-        <img src="https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&w=800&q=80"
-             alt="Scientific and technical workspace" loading="lazy">
-        <div class="gallery-caption">
-          <h3>Technical Research</h3>
-          <p>Science-driven water solutions</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- WATER ANALYSIS -->
-  <section class="analysis-section">
-    <div class="analysis-content reveal">
-      <div>
-        <p class="eyebrow">WATER QUALITY ANALYSIS</p>
-        <h2>Understand Your Water <span>Before Treating It.</span></h2>
-        <p>
-          CleanFlow begins with water quality information. Laboratory analysis
-          helps identify the characteristics of the sample before treatment
-          recommendations are made.
-        </p>
-      </div>
-
-      <div class="analysis-box">
-        <div><strong>Physical</strong><span>Water characteristics</span></div>
-        <div><strong>Chemical</strong><span>Chemical properties</span></div>
-        <div><strong>Microbiological</strong><span>Microbiological properties</span></div>
-      </div>
-    </div>
-  </section>
-
-  <!-- INDUSTRIES -->
-  <section id="industries" class="section light">
-    <div class="section-heading center reveal">
-      <p class="eyebrow">TARGET CUSTOMERS</p>
-      <h2>Industries We <span>Serve</span></h2>
-    </div>
-
-    <div class="industry-grid">
-      <div class="industry-card reveal">
-        🏭
-        <h3>Manufacturing</h3>
-        <p>Industrial facilities requiring water quality testing and treatment solutions.</p>
-      </div>
-      <div class="industry-card reveal">
-        🍽️
-        <h3>Food &amp; Beverage</h3>
-        <p>Businesses where water is important in processing, cleaning, and operations.</p>
-      </div>
-      <div class="industry-card reveal">
-        💧
-        <h3>Water-Intensive Industries</h3>
-        <p>Facilities that require regular water quality management.</p>
-      </div>
-      <div class="industry-card reveal">
-        ♻️
-        <h3>Wastewater Facilities</h3>
-        <p>Industrial facilities with wastewater treatment systems.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- BUSINESS MODEL -->
-  <section id="business" class="section business">
-    <div class="section-heading center reveal">
-      <p class="eyebrow white">BUSINESS MODEL CANVAS</p>
-      <h2>How CleanFlow <span>Creates Value</span></h2>
-    </div>
-
-    <div class="bmc-grid">
-      <div class="bmc-card">
-        <h3>Key Partners</h3>
-        <p>Chemical suppliers, laboratory equipment suppliers, environmental consultants, industrial companies, and environmental agencies.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Key Activities</h3>
-        <p>Water sampling, laboratory testing, analysis, consultation, chemical supply, and monitoring.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Value Proposition</h3>
-        <p>Reliable testing and customized treatment recommendations based on laboratory results.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Customer Relationships</h3>
-        <p>Personalized consultation, technical support, regular monitoring, and long-term service.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Customer Segments</h3>
-        <p>SMEs, manufacturing industries, food and beverage businesses, and industrial facilities.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Channels</h3>
-        <p>Direct consultation, on-site sampling, website, email, telephone, and direct communication.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Key Resources</h3>
-        <p>Chemical engineers, laboratory personnel, laboratory instruments, sampling equipment, chemicals, and technical knowledge.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Cost Structure</h3>
-        <p>Laboratory equipment, reagents, salaries, transportation, sampling, maintenance, and calibration.</p>
-      </div>
-      <div class="bmc-card">
-        <h3>Revenue Streams</h3>
-        <p>Testing fees, laboratory packages, chemical sales, consultation fees, and monitoring contracts.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- SERVICE PACKAGES -->
-  <section id="packages" class="section">
-    <div class="section-heading center reveal">
-      <p class="eyebrow">SERVICE PACKAGES</p>
-      <h2>Choose the Right <span>Service</span></h2>
-      <p>Packages from CleanFlow Engineering</p>
-    </div>
-
-    <div class="pricing-grid">
-      <div class="pricing-card reveal">
-        <h3>Basic Testing</h3>
-        <div class="price">₱500</div>
-        <p>Water Quality Testing</p>
-        <ul>
-          <li>Water sample collection</li>
-          <li>Selected laboratory tests (Total Coliform, Thermotolerant, Heterotrophic Plate Count)</li>
-          <li>Basic results report</li>
-          <li>Initial consultation</li>
-        </ul>
-        <button type="button" class="price-btn"
-                onclick="selectPackage('Basic Testing')">Checkout</button>
-      </div>
-
-      <div class="pricing-card popular-price reveal">
-        <div class="popular">RECOMMENDED</div>
-        <h3>Complete Analysis</h3>
-        <div class="price">₱1,500</div>
-        <p>Water Quality Analysis</p>
-        <ul>
-          <li>Water sample collection</li>
-          <li>Physical testing</li>
-          <li>Chemical testing</li>
-          <li>Laboratory report</li>
-          <li>Treatment consultation</li>
-        </ul>
-        <button type="button" class="price-btn"
-                onclick="selectPackage('Complete Analysis')">Checkout</button>
-      </div>
-
-      <div class="pricing-card reveal">
-        <h3>Water Quality Monitoring</h3>
-        <div class="price">₱2,500</div>
-        <p>Monitoring Plan</p>
-        <ul>
-          <li>Regular water testing</li>
-          <li>Follow-up monitoring</li>
-          <li>Treatment evaluation</li>
-          <li>Technical consultation</li>
-        </ul>
-        <button type="button" class="price-btn"
-                onclick="selectPackage('Water Quality Monitoring')">Checkout</button>
-      </div>
-    </div>
-  </section>
-
-  <!-- CHECKOUT DETAILS -->
-  <section id="quote" class="quote-section">
-    <div class="quote-container">
-      <div class="quote-text reveal">
-        <p class="eyebrow">SERVICE CHECKOUT</p>
-        <h2>Complete Your <span>Service Purchase.</span></h2>
-        <p>
-          Select your service package, provide the required details, and
-          choose your preferred payment method to proceed.
-        </p>
-      </div>
-
-      <form id="quoteForm" class="quote-form">
-        <h3>Checkout Details</h3>
-
-        <label for="quoteName">Full Name</label>
-        <input type="text" id="quoteName" name="name"
-               placeholder="Your full name" required maxlength="100">
-
-        <label for="quoteEmail">Email</label>
-        <input type="email" id="quoteEmail" name="email"
-               placeholder="Your email" required maxlength="160">
-
-        <label for="quoteCompany">Company / Organization</label>
-        <input type="text" id="quoteCompany" name="company"
-               placeholder="Company name" maxlength="160">
-
-        <label for="quoteService">Select Service Package</label>
-        <select id="quoteService" name="service" required>
-          <option value="">Select a service</option>
-          <option value="Basic Testing">Basic Testing — ₱500</option>
-          <option value="Complete Analysis">Complete Analysis — ₱1,500</option>
-          <option value="Water Quality Monitoring">Water Quality Monitoring — ₱2,500</option>
-        </select>
-
-        <label for="quoteMessage">Message / Additional Instructions</label>
-        <textarea id="quoteMessage" name="message" rows="4"
-                  maxlength="1000"
-                  placeholder="Describe your water quality needs..."></textarea>
-
-        <button type="submit" class="btn primary" id="submitCheckoutButton">
-          Continue to Payment
-        </button>
-
-        <p id="quoteResult" role="status" aria-live="polite"></p>
-      </form>
-    </div>
-  </section>
-
-  <!-- PAYMENT SECTION -->
-  <section id="payment" class="payment-section">
-    <h3>Payment Method</h3>
-    <p class="payment-description">Choose your preferred payment method.</p>
-
-    <div class="payment-options">
-      <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="GCash">
-        <span class="payment-option-content">
-          <span class="payment-icon">📱</span>
-          <strong>GCash</strong>
-          <small>Pay using GCash QR</small>
-        </span>
-      </label>
-
-      <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="Credit Card">
-        <span class="payment-option-content">
-          <span class="payment-icon">💳</span>
-          <strong>Credit Card</strong>
-          <small>Demo only — card processing unavailable</small>
-        </span>
-      </label>
-
-      <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="Debit Card">
-        <span class="payment-option-content">
-          <span class="payment-icon">💳</span>
-          <strong>Debit Card</strong>
-          <small>Demo only — card processing unavailable</small>
-        </span>
-      </label>
-
-      <label class="payment-option">
-        <input type="radio" name="paymentMethod" value="Online Bank Transfer">
-        <span class="payment-option-content">
-          <span class="payment-icon">🏦</span>
-          <strong>Online Bank Transfer</strong>
-          <small>Pay using bank transfer</small>
-        </span>
-      </label>
-    </div>
-
-    <div id="gcashPayment" class="qr-payment" hidden>
-      <h4>Pay with GCash</h4>
-      <p>Scan the QR code using your GCash application.</p>
-      <img src="https://placehold.co/250x250/e0f2fe/075985?text=GCash+QR"
-           alt="GCash QR placeholder" class="payment-qr">
-      <p class="qr-note">Demo placeholder only. Replace with your own QR code for a real payment arrangement.</p>
-    </div>
-
-    <div id="bankPayment" class="qr-payment" hidden>
-      <h4>Pay with Online Bank Transfer</h4>
-      <p>Use the banking payment details supplied by CleanFlow Engineering.</p>
-      <img src="https://placehold.co/250x250/e0f2fe/075985?text=Bank+QR"
-           alt="Bank transfer QR placeholder" class="payment-qr">
-      <p class="qr-note">Demo placeholder only. Replace with your own bank QR code.</p>
-    </div>
-
-    <div id="cardPayment" class="payment-notice" hidden>
-      <strong>Card Payment Unavailable</strong>
-      <p>
-        Direct credit and debit card processing is not connected.
-        For this demonstration, select GCash or Online Bank Transfer.
-        Never enter your card number, CVV, or PIN on this website.
-      </p>
-    </div>
-
-    <div class="payment-proof">
-      <label for="paymentReference">Payment Reference Number</label>
-      <input type="text" id="paymentReference" name="paymentReference"
-             placeholder="Enter reference number if available" maxlength="100">
-    </div>
-
-    <div class="payment-proof">
-      <label for="paymentProof">Upload Proof of Payment</label>
-      <input type="file" id="paymentProof" name="paymentProof"
-             accept="image/png,image/jpeg,image/webp,application/pdf">
-      <small>Accepted formats: JPG, PNG, WEBP, or PDF. Maximum size: 4 MB.</small>
-    </div>
-
-    <div class="payment-notice">
-      <strong>Payment Verification Notice</strong>
-      <p>
-        Orders remain pending until payment is manually verified.
-        Uploading a receipt does not automatically confirm payment.
-      </p>
-    </div>
-
-    <div class="payment-notice">
-      <strong>Demo Checkout Notice</strong>
-      <p>
-        This is a school-project demonstration. It does not process real
-        payments or automatically transfer money.
-      </p>
-    </div>
-
-    <button type="button" class="btn primary" id="submitDemoOrderButton">
-      Submit Demo Order
-    </button>
-
-    <p id="paymentResult" role="status" aria-live="polite"></p>
-  </section>
-
-  <!-- REFUND REQUEST -->
-  <section id="refund" class="section">
-    <div class="section-heading center">
-      <p class="eyebrow">CUSTOMER SUPPORT</p>
-      <h2>Request a Refund</h2>
-      <p>
-        Submit your order details and reason so your refund request
-        can be reviewed.
-      </p>
-    </div>
-
-    <div class="quote-form reveal">
-      <form id="refundForm">
-        <label for="refundOrderId">Order ID</label>
-        <input type="text" id="refundOrderId" name="orderId"
-               placeholder="Enter your order ID" required>
-
-        <label for="refundEmail">Email Used for the Order</label>
-        <input type="email" id="refundEmail" name="customerEmail"
-               placeholder="Enter your order email" required>
-
-        <label for="refundReason">Reason for Refund</label>
-        <textarea id="refundReason" name="reason" rows="4"
-                  maxlength="1000"
-                  placeholder="Explain why you are requesting a refund"
-                  required></textarea>
-
-        <button type="submit" class="btn primary">Submit Refund Request</button>
-        <p id="refundResult" role="status" aria-live="polite"></p>
-
-        <div class="payment-notice">
-          <strong>Refund Review Notice</strong>
           <p>
-            Submitting a request does not guarantee approval. This demo
-            records refund requests for review; it does not send money back.
+            Laboratory testing to determine the quality and characteristics
+            of industrial water samples.
+          </p>
+
+          <ul>
+            <li>Physical testing</li>
+            <li>Chemical testing</li>
+            <li>Microbiological testing</li>
+            <li>Laboratory reporting</li>
+          </ul>
+        </div>
+
+        <div class="service-card featured reveal">
+          <div class="popular">CORE SERVICE</div>
+
+          <div class="service-icon" aria-hidden="true">⚗️</div>
+
+          <h3>Water Treatment Chemicals</h3>
+
+          <p>
+            Appropriate treatment chemicals selected according to laboratory
+            findings and client requirements.
+          </p>
+
+          <ul>
+            <li>Coagulants</li>
+            <li>Flocculants</li>
+            <li>Disinfectants</li>
+            <li>pH-control chemicals</li>
+            <li>Corrosion inhibitors</li>
+            <li>Antiscalants</li>
+          </ul>
+        </div>
+
+        <div class="service-card reveal">
+          <div class="service-icon" aria-hidden="true">🧪</div>
+
+          <h3>Laboratory Services</h3>
+
+          <p>
+            Laboratory analysis and interpretation of water quality results.
+          </p>
+
+          <ul>
+            <li>Sample preparation</li>
+            <li>Laboratory analysis</li>
+            <li>Results interpretation</li>
+            <li>Technical reports</li>
+          </ul>
+        </div>
+
+        <div class="service-card reveal">
+          <div class="service-icon" aria-hidden="true">👨‍🔬</div>
+
+          <h3>Technical Consultation</h3>
+
+          <p>
+            Chemical engineering guidance for industrial water treatment
+            decisions.
+          </p>
+
+          <ul>
+            <li>Water quality interpretation</li>
+            <li>Treatment recommendations</li>
+            <li>Chemical selection</li>
+            <li>Technical support</li>
+          </ul>
+        </div>
+
+        <div class="service-card reveal">
+          <div class="service-icon" aria-hidden="true">📊</div>
+
+          <h3>Water Quality Monitoring</h3>
+
+          <p>
+            Follow-up testing to evaluate the effectiveness of implemented
+            treatment.
+          </p>
+
+          <ul>
+            <li>Follow-up testing</li>
+            <li>Performance evaluation</li>
+            <li>Regular monitoring</li>
+            <li>Treatment adjustment</li>
+          </ul>
+        </div>
+
+        <div class="service-card reveal">
+          <div class="service-icon" aria-hidden="true">💧</div>
+
+          <h3>On-Site Water Sampling</h3>
+
+          <p>
+            Collection of water samples from industrial facilities for
+            laboratory analysis.
+          </p>
+
+          <ul>
+            <li>On-site sampling</li>
+            <li>Sample labeling</li>
+            <li>Sample handling</li>
+            <li>Laboratory submission</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         PROCESS
+    ====================================================== -->
+    <section id="process" class="section">
+
+      <div class="section-heading center reveal">
+        <p class="eyebrow">OUR PROCESS</p>
+
+        <h2>
+          Test. Analyze. Treat.
+          <span>Monitor.</span>
+        </h2>
+
+        <p>
+          Our four-step approach connects laboratory analysis with water
+          treatment solutions.
+        </p>
+      </div>
+
+      <div class="process-grid">
+
+        <div class="process-card reveal">
+          <div class="process-number">01</div>
+          <h3>TEST</h3>
+
+          <p>
+            Collect water samples and perform the necessary physical,
+            chemical, and microbiological tests.
           </p>
         </div>
-      </form>
-    </div>
-  </section>
 
-  <!-- CONTACT -->
-  <section id="contact" class="section contact">
-    <div class="section-heading center">
-      <p class="eyebrow">CONTACT CLEANFLOW</p>
-      <h2>We're Ready to Help</h2>
-    </div>
+        <div class="process-card reveal">
+          <div class="process-number">02</div>
+          <h3>ANALYZE</h3>
 
-    <div class="contact-grid">
-      <div class="contact-box">
-        <div class="contact-icon">📧</div>
-        <h3>Email</h3>
-        <p>cleanflowengineer@gmail.com</p>
+          <p>
+            Review laboratory results and identify the client's specific
+            water quality concerns.
+          </p>
+        </div>
+
+        <div class="process-card reveal">
+          <div class="process-number">03</div>
+          <h3>TREAT</h3>
+
+          <p>
+            Recommend and supply appropriate water treatment chemicals
+            based on the findings.
+          </p>
+        </div>
+
+        <div class="process-card reveal">
+          <div class="process-number">04</div>
+          <h3>MONITOR</h3>
+
+          <p>
+            Conduct follow-up testing and evaluate treatment effectiveness.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         GALLERY
+    ====================================================== -->
+    <section id="gallery" class="section gallery-section">
+
+      <div class="section-heading center">
+        <p class="eyebrow">OUR GALLERY</p>
+
+        <h2>
+          Explore Our
+          <span>Work</span>
+        </h2>
+
+        <p>
+          Discover laboratory testing, water treatment solutions, and
+          engineering activities at CleanFlow Engineering.
+        </p>
       </div>
 
-      <div class="contact-box">
-        <div class="contact-icon">📞</div>
-        <h3>Phone</h3>
-        <p>+63 976 094 3554</p>
+      <div class="gallery-grid">
+
+        <div class="gallery-item">
+          <img
+            src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/b95dcc70-0251-443b-ba4c-55a08d18af85.jfif"
+            alt="Laboratory equipment for water quality testing"
+            loading="lazy"
+          >
+
+          <div class="gallery-caption">
+            <h3>Water Quality Testing</h3>
+            <p>Laboratory analysis and sample testing</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img
+            src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/1b627b2f-4593-44ff-87fb-0150d31a6ee7.jfif"
+            alt="Scientific laboratory research"
+            loading="lazy"
+          >
+
+          <div class="gallery-caption">
+            <h3>Laboratory Analysis</h3>
+            <p>Examining samples and evaluating results</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img
+            src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/08d7efa3-a4ee-46c0-a98a-ca34024b6de0.jfif"
+            alt="Engineering and technical equipment"
+            loading="lazy"
+          >
+
+          <div class="gallery-caption">
+            <h3>Engineering Solutions</h3>
+            <p>Technical evaluation and engineering work</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img
+            src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/b728f882-3cee-445f-8a1d-1b3962988d9c.jfif"
+            alt="Industrial facility and equipment"
+            loading="lazy"
+          >
+
+          <div class="gallery-caption">
+            <h3>Industrial Applications</h3>
+            <p>Supporting industrial water management</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img
+            src="https://images.unsplash.com/photo-1437482078695-73f5ca6c96e2?auto=format&fit=crop&w=800&q=80"
+            alt="Clean flowing water in nature"
+            loading="lazy"
+          >
+
+          <div class="gallery-caption">
+            <h3>Water Resources</h3>
+            <p>Promoting responsible water management</p>
+          </div>
+        </div>
+
+        <div class="gallery-item">
+          <img
+            src="https://images.unsplash.com/photo-1582719471384-894fbb16e074?auto=format&fit=crop&w=800&q=80"
+            alt="Scientific and technical workspace"
+            loading="lazy"
+          >
+
+          <div class="gallery-caption">
+            <h3>Technical Research</h3>
+            <p>Science-driven water solutions</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         WATER QUALITY ANALYSIS
+    ====================================================== -->
+    <section class="analysis-section">
+
+      <div class="analysis-content reveal">
+
+        <div>
+          <p class="eyebrow">WATER QUALITY ANALYSIS</p>
+
+          <h2>
+            Understand Your Water
+            <span>Before Treating It.</span>
+          </h2>
+
+          <p>
+            CleanFlow begins with water quality information. Laboratory
+            analysis helps identify the characteristics of the sample
+            before treatment recommendations are made.
+          </p>
+        </div>
+
+        <div class="analysis-box">
+          <div>
+            <strong>Physical</strong>
+            <span>Water characteristics</span>
+          </div>
+
+          <div>
+            <strong>Chemical</strong>
+            <span>Chemical properties</span>
+          </div>
+
+          <div>
+            <strong>Microbiological</strong>
+            <span>Microbiological properties</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         INDUSTRIES
+    ====================================================== -->
+    <section id="industries" class="section light">
+
+      <div class="section-heading center reveal">
+        <p class="eyebrow">TARGET CUSTOMERS</p>
+
+        <h2>
+          Industries We
+          <span>Serve</span>
+        </h2>
       </div>
 
-      <div class="contact-box">
-        <div class="contact-icon">📍</div>
-        <h3>Location</h3>
-        <p>Dagupan City, Pangasinan, Philippines</p>
-      </div>
-    </div>
-  </section>
+      <div class="industry-grid">
 
-  <!-- FOOTER -->
+        <div class="industry-card reveal">
+          <span aria-hidden="true">🏭</span>
+          <h3>Manufacturing</h3>
+
+          <p>
+            Industrial facilities requiring water quality testing and
+            treatment solutions.
+          </p>
+        </div>
+
+        <div class="industry-card reveal">
+          <span aria-hidden="true">🍽️</span>
+          <h3>Food &amp; Beverage</h3>
+
+          <p>
+            Businesses where water is important in processing, cleaning,
+            and operations.
+          </p>
+        </div>
+
+        <div class="industry-card reveal">
+          <span aria-hidden="true">💧</span>
+          <h3>Water-Intensive Industries</h3>
+
+          <p>
+            Facilities that require regular water quality management.
+          </p>
+        </div>
+
+        <div class="industry-card reveal">
+          <span aria-hidden="true">♻️</span>
+          <h3>Wastewater Facilities</h3>
+
+          <p>
+            Industrial facilities with wastewater treatment systems.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         BUSINESS MODEL
+    ====================================================== -->
+    <section id="business" class="section business">
+
+      <div class="section-heading center reveal">
+        <p class="eyebrow white">BUSINESS MODEL CANVAS</p>
+
+        <h2>
+          How CleanFlow
+          <span>Creates Value</span>
+        </h2>
+      </div>
+
+      <div class="bmc-grid">
+
+        <div class="bmc-card">
+          <h3>Key Partners</h3>
+          <p>
+            Chemical suppliers, laboratory equipment suppliers,
+            environmental consultants, industrial companies, and
+            environmental agencies.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Key Activities</h3>
+          <p>
+            Water sampling, laboratory testing, analysis, consultation,
+            chemical supply, and monitoring.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Value Proposition</h3>
+          <p>
+            Reliable testing and customized treatment recommendations
+            based on laboratory results.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Customer Relationships</h3>
+          <p>
+            Personalized consultation, technical support, regular
+            monitoring, and long-term service.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Customer Segments</h3>
+          <p>
+            SMEs, manufacturing industries, food and beverage businesses,
+            and industrial facilities.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Channels</h3>
+          <p>
+            Direct consultation, on-site sampling, website, email,
+            telephone, and direct communication.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Key Resources</h3>
+          <p>
+            Chemical engineers, laboratory personnel, laboratory
+            instruments, sampling equipment, chemicals, and technical
+            knowledge.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Cost Structure</h3>
+          <p>
+            Laboratory equipment, reagents, salaries, transportation,
+            sampling, maintenance, and calibration.
+          </p>
+        </div>
+
+        <div class="bmc-card">
+          <h3>Revenue Streams</h3>
+          <p>
+            Testing fees, laboratory packages, chemical sales,
+            consultation fees, and monitoring contracts.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         SERVICE PACKAGES
+    ====================================================== -->
+    <section id="packages" class="section">
+
+      <div class="section-heading center reveal">
+        <p class="eyebrow">SERVICE PACKAGES</p>
+
+        <h2>
+          Choose the Right
+          <span>Service</span>
+        </h2>
+
+        <p>Packages from CleanFlow Engineering</p>
+      </div>
+
+      <div class="pricing-grid">
+
+        <div class="pricing-card reveal">
+          <h3>Basic Testing</h3>
+
+          <div class="price">₱500</div>
+
+          <p>Water Quality Testing</p>
+
+          <ul>
+            <li>Water sample collection</li>
+            <li>
+              Selected laboratory tests (Total Coliform,
+              Thermotolerant, Heterotrophic Plate Count)
+            </li>
+            <li>Basic results report</li>
+            <li>Initial consultation</li>
+          </ul>
+
+          <button
+            type="button"
+            class="price-btn"
+            onclick="selectPackage('Basic Testing')"
+          >
+            Checkout
+          </button>
+        </div>
+
+        <div class="pricing-card popular-price reveal">
+          <div class="popular">RECOMMENDED</div>
+
+          <h3>Complete Analysis</h3>
+
+          <div class="price">₱1,500</div>
+
+          <p>Water Quality Analysis</p>
+
+          <ul>
+            <li>Water sample collection</li>
+            <li>Physical testing</li>
+            <li>Chemical testing</li>
+            <li>Laboratory report</li>
+            <li>Treatment consultation</li>
+          </ul>
+
+          <button
+            type="button"
+            class="price-btn"
+            onclick="selectPackage('Complete Analysis')"
+          >
+            Checkout
+          </button>
+        </div>
+
+        <div class="pricing-card reveal">
+          <h3>Water Quality Monitoring</h3>
+
+          <div class="price">₱2,500</div>
+
+          <p>Monitoring Plan</p>
+
+          <ul>
+            <li>Regular water testing</li>
+            <li>Follow-up monitoring</li>
+            <li>Treatment evaluation</li>
+            <li>Technical consultation</li>
+          </ul>
+
+          <button
+            type="button"
+            class="price-btn"
+            onclick="selectPackage('Water Quality Monitoring')"
+          >
+            Checkout
+          </button>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         CUSTOMER CHECKOUT DETAILS
+    ====================================================== -->
+    <section id="quote" class="quote-section">
+
+      <div class="quote-container">
+
+        <div class="quote-text reveal">
+          <p class="eyebrow">SERVICE CHECKOUT</p>
+
+          <h2>
+            Complete Your
+            <span>Service Purchase.</span>
+          </h2>
+
+          <p>
+            Select your service package, provide the required details,
+            and choose your preferred payment method to proceed.
+          </p>
+
+          <div class="payment-notice">
+            <strong>School Project Demonstration</strong>
+
+            <p>
+              This website demonstrates an order, payment-status, and
+              refund-request workflow. It does not process real payments.
+            </p>
+          </div>
+        </div>
+
+        <form id="quoteForm" class="quote-form">
+
+          <h3>Checkout Details</h3>
+
+          <label for="quoteName">Full Name</label>
+
+          <input
+            type="text"
+            id="quoteName"
+            name="name"
+            placeholder="Your full name"
+            maxlength="100"
+            autocomplete="name"
+            required
+          >
+
+          <label for="quoteEmail">Email Address</label>
+
+          <input
+            type="email"
+            id="quoteEmail"
+            name="email"
+            placeholder="Your email address"
+            maxlength="160"
+            autocomplete="email"
+            required
+          >
+
+          <label for="quoteCompany">Company / Organization</label>
+
+          <input
+            type="text"
+            id="quoteCompany"
+            name="company"
+            placeholder="Company name (optional)"
+            maxlength="160"
+            autocomplete="organization"
+          >
+
+          <label for="quoteService">Select Service Package</label>
+
+          <select id="quoteService" name="service" required>
+            <option value="">Select a service</option>
+            <option value="Basic Testing">Basic Testing — ₱500</option>
+            <option value="Complete Analysis">Complete Analysis — ₱1,500</option>
+            <option value="Water Quality Monitoring">
+              Water Quality Monitoring — ₱2,500
+            </option>
+          </select>
+
+          <label for="quoteMessage">
+            Message / Additional Instructions
+          </label>
+
+          <textarea
+            id="quoteMessage"
+            name="message"
+            rows="4"
+            maxlength="1000"
+            placeholder="Describe your water quality needs..."
+          ></textarea>
+
+          <button
+            type="submit"
+            class="btn primary"
+            id="submitCheckoutButton"
+          >
+            Continue to Payment
+          </button>
+
+          <p
+            id="quoteResult"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+        </form>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         PAYMENT METHODS AND PAYMENT SUBMISSION
+    ====================================================== -->
+    <section id="payment" class="payment-section">
+
+      <div class="section-heading center">
+        <p class="eyebrow">PAYMENT DETAILS</p>
+
+        <h2>
+          Choose Your
+          <span>Payment Method</span>
+        </h2>
+
+        <p class="payment-description">
+          Select a payment method for this school-project demonstration.
+        </p>
+      </div>
+
+      <!-- Payment method choices -->
+      <div class="payment-options">
+
+        <label class="payment-option">
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="GCash"
+          >
+
+          <span class="payment-option-content">
+            <span class="payment-icon" aria-hidden="true">📱</span>
+            <strong>GCash</strong>
+            <small>Demo QR and manual verification</small>
+          </span>
+        </label>
+
+        <label class="payment-option">
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="Credit Card"
+          >
+
+          <span class="payment-option-content">
+            <span class="payment-icon" aria-hidden="true">💳</span>
+            <strong>Credit Card</strong>
+            <small>Simulated card checkout only</small>
+          </span>
+        </label>
+
+        <label class="payment-option">
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="Debit Card"
+          >
+
+          <span class="payment-option-content">
+            <span class="payment-icon" aria-hidden="true">💳</span>
+            <strong>Debit Card</strong>
+            <small>Simulated card checkout only</small>
+          </span>
+        </label>
+
+        <label class="payment-option">
+          <input
+            type="radio"
+            name="paymentMethod"
+            value="Online Bank Transfer"
+          >
+
+          <span class="payment-option-content">
+            <span class="payment-icon" aria-hidden="true">🏦</span>
+            <strong>Online Bank Transfer</strong>
+            <small>Demo QR and manual verification</small>
+          </span>
+        </label>
+
+      </div>
+
+
+      <!-- GCash QR -->
+      <div id="gcashPayment" class="qr-payment" hidden>
+
+        <h3>Pay with GCash</h3>
+
+        <p>
+          For a demonstration, scan the sample QR code below.
+        </p>
+
+        <img
+          src="https://placehold.co/250x250/e0f2fe/075985?text=GCash+QR"
+          alt="Placeholder GCash QR code for demonstration"
+          class="payment-qr"
+          width="250"
+          height="250"
+          loading="lazy"
+        >
+
+        <p class="qr-note">
+          This is a placeholder QR code, not a working payment QR code.
+          Replace it only if you have an authorized payment QR for a real
+          payment arrangement.
+        </p>
+
+      </div>
+
+
+      <!-- ONLINE BANK TRANSFER QR -->
+      <div id="bankPayment" class="qr-payment" hidden>
+
+        <h3>Pay with Online Bank Transfer</h3>
+
+        <p>
+          This area demonstrates where your bank QR code would appear.
+        </p>
+
+        <img
+          src="https://placehold.co/250x250/e0f2fe/075985?text=Bank+QR"
+          alt="Placeholder bank transfer QR code for demonstration"
+          class="payment-qr"
+          width="250"
+          height="250"
+          loading="lazy"
+        >
+
+        <p class="qr-note">
+          This is a placeholder QR code and cannot transfer money.
+        </p>
+
+      </div>
+
+
+<!-- CREDIT / DEBIT CARD DEMO -->
+<div id="cardPayment" class="qr-payment" hidden>
+
+  <h3>💳 Card Checkout</h3>
+
+  <div class="payment-notice">
+    <strong>School Project Demonstration Only</strong>
+    <p>
+      This is a simulated card payment. No real money will be charged.
+    </p>
+  </div>
+
+  <label for="demoCardName">Cardholder Name</label>
+  <input
+    type="text"
+    id="demoCardName"
+    name="demoCardName"
+    maxlength="100"
+    autocomplete="off"
+    required
+  >
+
+  <label for="demoCardNumber">Card Number</label>
+  <input
+    type="text"
+    id="demoCardNumber"
+    name="demoCardNumber"
+    inputmode="numeric"
+    maxlength="16"
+    minlength="16"
+    pattern="[0-9]{16}"
+    autocomplete="off"
+    required
+  >
+
+  <label for="demoCardExpiry">Expiration Date</label>
+  <input
+    type="text"
+    id="demoCardExpiry"
+    name="demoCardExpiry"
+    maxlength="5"
+    minlength="5"
+    pattern="(0[1-9]|1[0-2])/[0-9]{2}"
+    autocomplete="off"
+    required
+  >
+
+  <label for="demoCardCVV">Demo CVV</label>
+  <input
+    type="password"
+    id="demoCardCVV"
+    name="demoCardCVV"
+    inputmode="numeric"
+    maxlength="3"
+    minlength="3"
+    pattern="[0-9]{3}"
+    autocomplete="off"
+    required
+  >
+
+  <p id="cardDemoResult" role="status" aria-live="polite"></p>
+
+</div>
+
+
+      <!-- PAYMENT REFERENCE -->
+      <div class="payment-proof">
+
+        <label for="paymentReference">
+          Payment Reference Number
+        
+        </label>
+
+        <input
+          type="text"
+          id="paymentReference"
+          name="paymentReference"
+          placeholder="Enter a demo reference number if available"
+          maxlength="100"
+          autocomplete="off"
+        >
+
+        <small>
+          Do not enter bank login credentials, passwords, or PINs.
+        </small>
+
+      </div>
+
+
+      <!-- PAYMENT RECEIPT -->
+      <div class="payment-proof">
+
+        <label for="paymentProof">
+          Upload Proof of Payment
+        </label>
+
+        <input
+          type="file"
+          id="paymentProof"
+          name="paymentProof"
+          accept="image/png,image/jpeg,image/webp,application/pdf"
+          aria-describedby="paymentProofHelp"
+        >
+
+        <small id="paymentProofHelp">
+          Accepted formats: JPG, PNG, WEBP, or PDF.
+          Maximum file size: 4 MB.
+        </small>
+
+      </div>
+
+
+      <!-- MANUAL VERIFICATION NOTICE -->
+      <div class="payment-notice">
+
+        <strong>Payment Verification Notice</strong>
+
+        <p>
+          GCash and online bank transfer orders remain pending until
+          payment is manually reviewed. Uploading a receipt does not
+          automatically confirm that money was received.
+        </p>
+
+      </div>
+
+
+      <!-- DEMO PAYMENT NOTICE -->
+      <div class="payment-notice">
+
+        <strong>Demo Checkout Notice</strong>
+
+        <p>
+          This is a school-project demonstration. Card checkout is simulated,
+          and GCash/bank QR images are placeholders. The website does not
+          process actual card charges or transfer money.
+        </p>
+
+      </div>
+
+
+      <!-- ORDER SUBMISSION -->
+      <button
+        type="button"
+        class="btn primary"
+        id="submitDemoOrderButton"
+      >
+        Submit Demo Order
+      </button>
+
+      <p
+        id="paymentResult"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+    </section>
+
+
+    <!-- =====================================================
+         REFUND REQUEST
+    ====================================================== -->
+    <section id="refund" class="section">
+
+      <div class="section-heading center">
+        <p class="eyebrow">CUSTOMER SUPPORT</p>
+
+        <h2>
+          Request a
+          <span>Refund</span>
+        </h2>
+
+        <p>
+          Submit your order details and reason so your refund request
+          can be reviewed.
+        </p>
+      </div>
+
+      <div class="quote-form reveal">
+
+        <form id="refundForm">
+
+          <label for="refundOrderId">Order ID</label>
+
+          <input
+            type="text"
+            id="refundOrderId"
+            name="orderId"
+            placeholder="Enter your order ID"
+            maxlength="100"
+            required
+          >
+
+          <label for="refundEmail">Email Used for the Order</label>
+
+          <input
+            type="email"
+            id="refundEmail"
+            name="customerEmail"
+            placeholder="Enter your order email"
+            maxlength="160"
+            autocomplete="email"
+            required
+          >
+
+          <label for="refundReason">Reason for Refund</label>
+
+          <textarea
+            id="refundReason"
+            name="reason"
+            rows="4"
+            maxlength="1000"
+            placeholder="Explain why you are requesting a refund"
+            required
+          ></textarea>
+
+          <button type="submit" class="btn primary">
+            Submit Refund Request
+          </button>
+
+          <p
+            id="refundResult"
+            role="status"
+            aria-live="polite"
+          ></p>
+
+          <div class="payment-notice">
+
+            <strong>Refund Review Notice</strong>
+
+            <p>
+              Submitting a refund request does not guarantee approval.
+              This demonstration records requests for review but does not
+              send money back to a customer.
+            </p>
+
+          </div>
+
+        </form>
+
+      </div>
+    </section>
+
+
+    <!-- =====================================================
+         CONTACT
+    ====================================================== -->
+    <section id="contact" class="section contact">
+
+      <div class="section-heading center">
+        <p class="eyebrow">CONTACT CLEANFLOW</p>
+        <h2>We're Ready to Help</h2>
+      </div>
+
+      <div class="contact-grid">
+
+        <div class="contact-box">
+          <div class="contact-icon" aria-hidden="true">📧</div>
+          <h3>Email</h3>
+          <p>cleanflowengineer@gmail.com</p>
+        </div>
+
+        <div class="contact-box">
+          <div class="contact-icon" aria-hidden="true">📞</div>
+          <h3>Phone</h3>
+          <p>+63 976 094 3554</p>
+        </div>
+
+        <div class="contact-box">
+          <div class="contact-icon" aria-hidden="true">📍</div>
+          <h3>Location</h3>
+          <p>Dagupan City, Pangasinan, Philippines</p>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- =====================================================
+       FOOTER
+  ====================================================== -->
   <footer class="site-footer">
+
     <div class="footer-logo">
-      <img src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/logo.png"
-           alt="CleanFlow Engineering" width="90">
+
+      <img
+        src="https://uploads.onecompiler.io/44xws3nj7/44xwtwy4d/logo.png"
+        alt="CleanFlow Engineering logo"
+        width="90"
+        loading="lazy"
+      >
+
       <h2>CleanFlow Engineering</h2>
+
     </div>
 
-    <p>Chemical Engineering Approach to Industrial Water Quality Management</p>
+    <p>
+      Chemical Engineering Approach to Industrial Water Quality Management
+    </p>
 
     <div class="footer-bottom">
+
       <p>© 2026 CleanFlow Engineering. All Rights Reserved.</p>
-      <p>School Project Demo — No real payments are processed.</p>
+
+      <p>
+        School Project Demonstration — No real payments are processed.
+      </p>
+
     </div>
   </footer>
 
-  <!-- SERVICE MODAL -->
-  <div id="serviceModal" class="modal" hidden>
+
+  <!-- =====================================================
+       SERVICE MODAL
+  ====================================================== -->
+  <div
+    id="serviceModal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="modalTitle"
+    aria-describedby="modalText"
+    hidden
+  >
+
     <div class="modal-content">
-      <button type="button" class="close-modal"
-              onclick="closeService()" aria-label="Close">×</button>
-      <div class="modal-icon">💧</div>
+
+      <button
+        type="button"
+        class="close-modal"
+        onclick="closeService()"
+        aria-label="Close service details"
+      >
+        ×
+      </button>
+
+      <div class="modal-icon" aria-hidden="true">💧</div>
+
       <h2 id="modalTitle">Service</h2>
-      <p id="modalText">CleanFlow Engineering service.</p>
-      <a href="#quote" class="btn primary" onclick="closeService()">
+
+      <p id="modalText">
+        CleanFlow Engineering service.
+      </p>
+
+      <a
+        href="#quote"
+        class="btn primary"
+        onclick="closeService()"
+      >
         Continue to Checkout
       </a>
+
     </div>
   </div>
 
