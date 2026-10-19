@@ -1,9 +1,9 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>CleanFlow Engineering | Admin Dashboard</title>
 
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
@@ -16,10 +16,13 @@
       --border: #dce6ec;
       --green: #167447;
       --red: #b42318;
+      --orange: #9a5700;
       --text: #203442;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -39,8 +42,15 @@
       flex-wrap: wrap;
     }
 
-    header h1 { margin: 0; font-size: 23px; }
-    header p { margin: 6px 0 0; color: #d6e9f1; }
+    header h1 {
+      margin: 0;
+      font-size: 23px;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: #d6e9f1;
+    }
 
     main {
       max-width: 1200px;
@@ -57,7 +67,10 @@
       margin-bottom: 22px;
     }
 
-    h2 { margin-top: 0; color: var(--navy); }
+    h2 {
+      margin-top: 0;
+      color: var(--navy);
+    }
 
     label {
       display: block;
@@ -65,7 +78,9 @@
       margin: 12px 0 7px;
     }
 
-    input, select, textarea {
+    input,
+    select,
+    textarea {
       width: 100%;
       padding: 11px;
       border: 1px solid #cbd8e0;
@@ -74,7 +89,8 @@
       background: white;
     }
 
-    button, .button-link {
+    button,
+    .button-link {
       display: inline-block;
       padding: 11px 16px;
       border: 0;
@@ -87,20 +103,38 @@
       font: inherit;
     }
 
-    button:hover, .button-link:hover { opacity: .9; }
-    button:disabled { opacity: .6; cursor: wait; }
+    button:hover,
+    .button-link:hover {
+      opacity: .9;
+    }
 
-    .secondary { background: #526675; }
-    .hidden { display: none !important; }
+    button:disabled {
+      opacity: .6;
+      cursor: wait;
+    }
+
+    .secondary {
+      background: #526675;
+    }
+
+    .hidden {
+      display: none !important;
+    }
 
     .message {
       margin-top: 14px;
       font-size: 14px;
       overflow-wrap: anywhere;
+      line-height: 1.5;
     }
 
-    .success { color: var(--green); }
-    .error { color: var(--red); }
+    .success {
+      color: var(--green);
+    }
+
+    .error {
+      color: var(--red);
+    }
 
     .stats {
       display: grid;
@@ -129,51 +163,130 @@
       padding: 18px;
       margin: 14px 0;
       overflow-wrap: anywhere;
+      background: white;
     }
 
-    .record h3 { margin: 0 0 12px; color: var(--navy); }
-    .record p { margin: 7px 0; line-height: 1.5; }
-    .record-actions { margin-top: 14px; }
+    .record h3 {
+      margin: 0 0 12px;
+      color: var(--navy);
+    }
 
-    .record-actions button { margin-top: 10px; }
+    .record p {
+      margin: 7px 0;
+      line-height: 1.5;
+    }
+
+    .record-actions {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    .record-actions button {
+      margin-top: 10px;
+    }
 
     .notice {
       background: #eef8ff;
       border-left: 4px solid var(--blue);
       padding: 13px;
       border-radius: 6px;
-      line-height: 1.5;
+      line-height: 1.6;
       margin-bottom: 16px;
     }
 
-    .empty { color: #627583; padding: 12px 0; }
+    .warning {
+      background: #fff7e8;
+      border-left: 4px solid #d97706;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 12px 0;
+      line-height: 1.5;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 20px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      margin: 3px 3px 3px 0;
+      background: #e8eef2;
+      color: #344955;
+    }
+
+    .badge-demo {
+      background: #fff0d5;
+      color: #804600;
+    }
+
+    .badge-success {
+      background: #dff7e8;
+      color: #166534;
+    }
+
+    .badge-pending {
+      background: #fff0d5;
+      color: #804600;
+    }
+
+    .empty {
+      color: #627583;
+      padding: 12px 0;
+    }
+
+    a {
+      color: var(--blue);
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
 
     @media (max-width: 600px) {
-      header { padding: 18px; }
-      main { padding: 0 12px; margin: 16px auto; }
-      .panel { padding: 17px; }
+      header {
+        padding: 18px;
+      }
+
+      main {
+        padding: 0 12px;
+        margin: 16px auto;
+      }
+
+      .panel {
+        padding: 17px;
+      }
     }
   </style>
 </head>
 
 <body>
+
 <header>
   <div>
     <h1>💧 CleanFlow Engineering</h1>
     <p>Administrator Dashboard</p>
   </div>
-  <button id="logoutButton" class="secondary hidden" type="button">
+
+  <button
+    id="logoutButton"
+    class="secondary hidden"
+    type="button"
+  >
     Log Out
   </button>
 </header>
 
 <main>
+
+  <!-- ADMIN LOGIN -->
+
   <section id="loginPanel" class="panel">
     <h2>Administrator Login</h2>
+
     <p>Sign in to review customer orders and refund requests.</p>
 
     <form id="loginForm">
       <label for="adminPassword">Admin password</label>
+
       <input
         id="adminPassword"
         type="password"
@@ -181,19 +294,35 @@
         required
       >
 
-      <button id="loginButton" type="submit" style="margin-top:16px">
+      <button
+        id="loginButton"
+        type="submit"
+        style="margin-top:16px"
+      >
         Log In
       </button>
-      <p id="loginMessage" class="message" role="status"></p>
+
+      <p
+        id="loginMessage"
+        class="message"
+        role="status"
+        aria-live="polite"
+      ></p>
     </form>
   </section>
 
+  <!-- DASHBOARD -->
+
   <section id="dashboard" class="hidden">
+
     <div class="notice">
-      <strong>Demo payment verification:</strong>
-      Review the customer's order and receipt before changing the status.
-      Saving a status does not move money or automatically issue a refund.
-      EmailJS notifications are sent after the backend saves a status change.
+      <strong>School Project Demonstration Only</strong><br>
+
+      Credit and debit card payments are simulations. GCash and
+      bank-transfer orders require manual receipt verification.
+
+      Changing an order status does not verify a real transaction.
+      Marking a refund as completed does not transfer money.
     </div>
 
     <div class="stats">
@@ -201,29 +330,56 @@
         <strong id="totalOrders">0</strong>
         Total Orders
       </div>
+
       <div class="stat">
         <strong id="pendingOrders">0</strong>
         Pending Orders
       </div>
+
       <div class="stat">
         <strong id="totalRefunds">0</strong>
         Refund Requests
       </div>
     </div>
 
+    <!-- CUSTOMER ORDERS -->
+
     <section class="panel">
       <h2>Customer Orders</h2>
-      <button id="refreshOrdersButton" type="button">Refresh Orders</button>
-      <p id="ordersMessage" class="message" role="status"></p>
+
+      <button id="refreshOrdersButton" type="button">
+        Refresh Orders
+      </button>
+
+      <p
+        id="ordersMessage"
+        class="message"
+        role="status"
+        aria-live="polite"
+      ></p>
+
       <div id="ordersList"></div>
     </section>
 
+    <!-- REFUND REQUESTS -->
+
     <section class="panel">
       <h2>Refund Requests</h2>
-      <button id="refreshRefundsButton" type="button">Refresh Refunds</button>
-      <p id="refundsMessage" class="message" role="status"></p>
+
+      <button id="refreshRefundsButton" type="button">
+        Refresh Refunds
+      </button>
+
+      <p
+        id="refundsMessage"
+        class="message"
+        role="status"
+        aria-live="polite"
+      ></p>
+
       <div id="refundsList"></div>
     </section>
+
   </section>
 </main>
 
@@ -232,20 +388,22 @@
 
 /* ==========================================
    EMAILJS CONFIGURATION
-   Keep your existing IDs and public key.
 ========================================== */
 
 const EMAILJS_PUBLIC_KEY = "zTVG7TfT8a3f7C28r";
 const EMAILJS_SERVICE_ID = "service_ndmbg2r";
-const EMAILJS_ADMIN_TEMPLATE_ID = "template_yzzz0ms";
 const EMAILJS_CUSTOMER_TEMPLATE_ID = "template_sl7hzru";
+
 const ADMIN_EMAIL = "cleanflowengineer@gmail.com";
 
 let emailJsReady = false;
 
 try {
   if (window.emailjs) {
-    window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    window.emailjs.init({
+      publicKey: EMAILJS_PUBLIC_KEY
+    });
+
     emailJsReady = true;
   }
 } catch (error) {
@@ -253,19 +411,22 @@ try {
 }
 
 /* ==========================================
-   DOM HELPERS
+   HELPERS
 ========================================== */
 
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 function showMessage(id, message, success = true) {
   const element = $(id);
+
   element.textContent = message;
-  element.className = "message " + (success ? "success" : "error");
+
+  element.className =
+    "message " + (success ? "success" : "error");
 }
 
 function escapeHTML(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
     "&": "&amp;",
     "<": "&lt;",
     ">": "&gt;",
@@ -274,37 +435,57 @@ function escapeHTML(value) {
   })[character]);
 }
 
+function formatDate(value) {
+  if (!value) return "Not available";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Not available";
+  }
+
+  return date.toLocaleString();
+}
+
 async function apiRequest(url, options = {}) {
   const response = await fetch(url, {
     credentials: "same-origin",
     ...options,
+
     headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...(options.body
+        ? { "Content-Type": "application/json" }
+        : {}),
+
       ...(options.headers || {})
     }
   });
 
   const text = await response.text();
+
   let data = {};
 
   try {
     data = text ? JSON.parse(text) : {};
   } catch {
     throw new Error(
-      "The server returned an unexpected response (HTTP " +
-      response.status + "). Check the Node.js server."
+      "Unexpected server response (HTTP " +
+      response.status +
+      "). Check the Node.js server."
     );
   }
 
   if (!response.ok) {
-    throw new Error(data.error || data.message || "Request failed.");
+    throw new Error(
+      data.error || data.message || "The request failed."
+    );
   }
 
   return data;
 }
 
 /* ==========================================
-   CUSTOMER STATUS EMAIL
+   EMAIL NOTIFICATIONS
 ========================================== */
 
 async function sendCustomerStatusEmail({
@@ -317,13 +498,13 @@ async function sendCustomerStatusEmail({
 }) {
   if (!window.emailjs || !emailJsReady) {
     throw new Error(
-      "EmailJS did not initialize. Check your internet connection and refresh."
+      "EmailJS is unavailable. Check your internet connection."
     );
   }
 
   if (!email) {
     throw new Error(
-      "The customer's email address is missing from this record."
+      "The customer's email address is missing."
     );
   }
 
@@ -332,24 +513,31 @@ async function sendCustomerStatusEmail({
   const parameters = {
     to_email: email,
     customer_email: email,
+
     to_name: customerName || "Customer",
     customer_name: customerName || "Customer",
-    order_id: orderId,
+
+    order_id: orderId || "",
     service_name: service || "CleanFlow Engineering service",
+
     status: status,
     payment_status: status,
+    order_status: status,
     refund_status: status,
+
     notification_type: isRefund
       ? "Refund status update"
-      : "Payment status update",
+      : "Order status update",
+
     admin_email: ADMIN_EMAIL,
+
     message: isRefund
-      ? "Your CleanFlow refund request status has been updated to: " +
+      ? "Your CleanFlow refund request status is now: " +
         status +
-        ". This is a school-project demo. No money is transferred automatically."
-      : "Your CleanFlow order payment status has been updated to: " +
+        ". This is a school-project demonstration. No money is transferred automatically."
+      : "Your CleanFlow order status is now: " +
         status +
-        ". This is a school-project demo."
+        ". This is a school-project demonstration. Card payments are simulated."
   };
 
   const result = await window.emailjs.send(
@@ -359,7 +547,9 @@ async function sendCustomerStatusEmail({
   );
 
   if (!result || result.status !== 200) {
-    throw new Error("EmailJS did not confirm the email request.");
+    throw new Error(
+      "EmailJS did not confirm the email request."
+    );
   }
 
   return result;
@@ -370,31 +560,55 @@ async function sendCustomerStatusEmail({
 ========================================== */
 
 function showDashboard(isLoggedIn) {
-  $("loginPanel").classList.toggle("hidden", isLoggedIn);
-  $("dashboard").classList.toggle("hidden", !isLoggedIn);
-  $("logoutButton").classList.toggle("hidden", !isLoggedIn);
+  $("loginPanel").classList.toggle(
+    "hidden",
+    isLoggedIn
+  );
+
+  $("dashboard").classList.toggle(
+    "hidden",
+    !isLoggedIn
+  );
+
+  $("logoutButton").classList.toggle(
+    "hidden",
+    !isLoggedIn
+  );
 }
 
-$("loginForm").addEventListener("submit", async (event) => {
+$("loginForm").addEventListener("submit", async event => {
   event.preventDefault();
 
   const button = $("loginButton");
+
   button.disabled = true;
-  showMessage("loginMessage", "Signing in...");
+
+  showMessage(
+    "loginMessage",
+    "Signing in..."
+  );
 
   try {
     await apiRequest("/api/admin/login", {
       method: "POST",
+
       body: JSON.stringify({
         password: $("adminPassword").value
       })
     });
 
     $("adminPassword").value = "";
+
     showDashboard(true);
+
     await loadDashboard();
+
   } catch (error) {
-    showMessage("loginMessage", error.message, false);
+    showMessage(
+      "loginMessage",
+      error.message,
+      false
+    );
   } finally {
     button.disabled = false;
   }
@@ -402,27 +616,36 @@ $("loginForm").addEventListener("submit", async (event) => {
 
 $("logoutButton").addEventListener("click", async () => {
   try {
-    await apiRequest("/api/admin/logout", { method: "POST" });
+    await apiRequest("/api/admin/logout", {
+      method: "POST"
+    });
   } catch (error) {
     console.error("Logout error:", error);
   }
 
   showDashboard(false);
-  showMessage("loginMessage", "You have been logged out.");
+
+  showMessage(
+    "loginMessage",
+    "You have been logged out."
+  );
 });
 
 async function checkAdminSession() {
   try {
     await apiRequest("/api/admin/session");
+
     showDashboard(true);
+
     await loadDashboard();
+
   } catch {
     showDashboard(false);
   }
 }
 
 /* ==========================================
-   ORDER STATUS
+   ORDER MANAGEMENT
 ========================================== */
 
 const ORDER_STATUSES = [
@@ -432,37 +655,165 @@ const ORDER_STATUSES = [
 ];
 
 function orderCard(order) {
-  const id = escapeHTML(order.id);
-  const status = ORDER_STATUSES.includes(order.status)
+  const id = String(order.id || "");
+
+  const safeId = escapeHTML(id);
+
+  const currentStatus = ORDER_STATUSES.includes(order.status)
     ? order.status
     : "Pending Verification";
 
-  const options = ORDER_STATUSES.map((item) =>
-    `<option value="${escapeHTML(item)}" ${
-      item === status ? "selected" : ""
-    }>${escapeHTML(item)}</option>`
-  ).join("");
+  const options = ORDER_STATUSES.map(status => `
+    <option
+      value="${escapeHTML(status)}"
+      ${status === currentStatus ? "selected" : ""}
+    >
+      ${escapeHTML(status)}
+    </option>
+  `).join("");
 
-  const receipt = order.receiptUrl
-    ? `<p><a href="${escapeHTML(order.receiptUrl)}" target="_blank"
-          rel="noopener noreferrer">View payment receipt</a></p>`
-    : `<p>No receipt link is available for this order.</p>`;
+  // Support both receipt properties from the backend.
+  const receiptUrl =
+    order.receipt?.url ||
+    order.receiptUrl ||
+    null;
+
+  const isCard =
+    order.paymentMethod === "Credit Card" ||
+    order.paymentMethod === "Debit Card";
+
+  const paymentStatus =
+    order.paymentStatus ||
+    (isCard
+      ? "Demo Payment — Status Not Recorded"
+      : "Awaiting Manual Verification");
+
+  const paymentBadge = isCard
+    ? '<span class="badge badge-demo">DEMO CARD PAYMENT</span>'
+    : '<span class="badge badge-pending">MANUAL VERIFICATION</span>';
+
+  const demoWarning = isCard
+    ? `
+      <div class="warning">
+        <strong>Simulated card payment</strong><br>
+        ${escapeHTML(paymentStatus)}.
+        No real card was charged. Do not treat this record as proof
+        of an actual financial transaction.
+      </div>
+    `
+    : `
+      <div class="notice">
+        <strong>Receipt verification required.</strong><br>
+        Check the uploaded receipt and payment reference before
+        changing the order status.
+      </div>
+    `;
+
+  const receiptHTML = receiptUrl
+    ? `
+      <p>
+        <strong>Receipt:</strong>
+        <a
+          href="${escapeHTML(receiptUrl)}"
+          target="_blank"
+          rel="noopener noreferrer"
+        >View Uploaded Receipt</a>
+      </p>
+    `
+    : `
+      <p>
+        <strong>Receipt:</strong>
+        ${isCard
+          ? "Not required for the card demo."
+          : "No receipt available."}
+      </p>
+    `;
 
   return `
     <article class="record">
-      <h3>Order #${id}</h3>
-      <p><strong>Customer:</strong> ${escapeHTML(order.customerName || "Not provided")}</p>
-      <p><strong>Email:</strong> ${escapeHTML(order.customerEmail || "")}</p>
-      <p><strong>Service:</strong> ${escapeHTML(order.service || order.serviceName || "Not specified")}</p>
-      <p><strong>Amount:</strong> ${escapeHTML(order.amount ?? order.total ?? "Not specified")}</p>
-      <p><strong>Payment method:</strong> ${escapeHTML(order.paymentMethod || "Not specified")}</p>
-      <p><strong>Current status:</strong> ${escapeHTML(order.status || "Pending Verification")}</p>
-      ${receipt}
+
+      <h3>Order #${safeId}</h3>
+
+      ${paymentBadge}
+
+      <p>
+        <strong>Customer:</strong>
+        ${escapeHTML(order.customerName || "Not provided")}
+      </p>
+
+      <p>
+        <strong>Email:</strong>
+        ${escapeHTML(order.customerEmail || "")}
+      </p>
+
+      <p>
+        <strong>Company:</strong>
+        ${escapeHTML(order.company || "Not provided")}
+      </p>
+
+      <p>
+        <strong>Service:</strong>
+        ${escapeHTML(order.service || "Not specified")}
+      </p>
+
+      <p>
+        <strong>Payment method:</strong>
+        ${escapeHTML(order.paymentMethod || "Not specified")}
+      </p>
+
+      <p>
+        <strong>Payment status:</strong>
+        ${escapeHTML(paymentStatus)}
+      </p>
+
+      <p>
+        <strong>Order status:</strong>
+        ${escapeHTML(order.status || "Pending Verification")}
+      </p>
+
+      <p>
+        <strong>Payment reference:</strong>
+        ${escapeHTML(order.paymentReference || "Not provided")}
+      </p>
+
+      <p>
+        <strong>Customer notes:</strong>
+        ${escapeHTML(order.notes || "None")}
+      </p>
+
+      <p>
+        <strong>Submitted:</strong>
+        ${escapeHTML(formatDate(order.createdAt))}
+      </p>
+
+      ${receiptHTML}
+
+      ${demoWarning}
+
       <div class="record-actions">
-        <label for="order-status-${id}">Update payment status</label>
-        <select id="order-status-${id}">${options}</select>
-        <button type="button" data-save-order="${id}">Save Order Status</button>
-        <p id="order-message-${id}" class="message" role="status"></p>
+
+        <label for="order-status-${safeId}">
+          Update Order Status
+        </label>
+
+        <select id="order-status-${safeId}">
+          ${options}
+        </select>
+
+        <button
+          type="button"
+          data-save-order="${safeId}"
+        >
+          Save Order Status
+        </button>
+
+        <p
+          id="order-message-${safeId}"
+          class="message"
+          role="status"
+          aria-live="polite"
+        ></p>
+
       </div>
     </article>
   `;
@@ -470,94 +821,153 @@ function orderCard(order) {
 
 async function saveOrderStatus(order) {
   const id = String(order.id);
+
   const select = $("order-status-" + id);
+
   const button = document.querySelector(
     `[data-save-order="${CSS.escape(id)}"]`
   );
+
   const newStatus = select.value;
-  const oldStatus = order.status || "Pending Verification";
+
+  const oldStatus =
+    order.status || "Pending Verification";
 
   if (newStatus === oldStatus) {
-    showMessage("order-message-" + id, "No status change to save.");
+    showMessage(
+      "order-message-" + id,
+      "No status change to save."
+    );
+
     return;
   }
 
   button.disabled = true;
-  showMessage("order-message-" + id, "Saving order status...");
+
+  showMessage(
+    "order-message-" + id,
+    "Saving order status..."
+  );
 
   try {
     await apiRequest(
-      "/api/admin/orders/" + encodeURIComponent(id) + "/status",
+      "/api/admin/orders/" +
+        encodeURIComponent(id) +
+        "/status",
       {
         method: "POST",
-        body: JSON.stringify({ status: newStatus })
+
+        body: JSON.stringify({
+          status: newStatus
+        })
       }
     );
+
+    let notificationMessage =
+      "Order status saved successfully.";
+
+    let notificationSuccess = true;
 
     try {
       await sendCustomerStatusEmail({
         email: order.customerEmail,
         customerName: order.customerName,
         orderId: order.id,
-        service: order.service || order.serviceName,
+        service: order.service,
         status: newStatus,
         kind: "order"
       });
 
-      showMessage(
-        "order-message-" + id,
-        "Order status saved. EmailJS accepted the customer notification."
-      );
+      notificationMessage +=
+        " EmailJS accepted the customer notification.";
+
     } catch (emailError) {
-      showMessage(
-        "order-message-" + id,
-        "Order status saved, but the email failed: " + emailError.message,
-        false
-      );
+      notificationSuccess = false;
+
+      notificationMessage +=
+        " Email notification failed: " +
+        emailError.message;
     }
 
+    showMessage(
+      "ordersMessage",
+      notificationMessage,
+      notificationSuccess
+    );
+
     await loadOrders();
+
   } catch (error) {
-    showMessage("order-message-" + id, error.message, false);
+    showMessage(
+      "order-message-" + id,
+      error.message,
+      false
+    );
   } finally {
     button.disabled = false;
   }
 }
 
 async function loadOrders() {
-  showMessage("ordersMessage", "Loading orders...");
+  showMessage(
+    "ordersMessage",
+    "Loading orders..."
+  );
 
   try {
-    const data = await apiRequest("/api/admin/orders");
-    const orders = Array.isArray(data) ? data : (data.orders || []);
+    const data = await apiRequest(
+      "/api/admin/orders"
+    );
+
+    const orders = Array.isArray(data)
+      ? data
+      : data.orders || [];
 
     $("totalOrders").textContent = orders.length;
-    $("pendingOrders").textContent = orders.filter(
-      order => !order.status || order.status === "Pending Verification"
-    ).length;
+
+    $("pendingOrders").textContent =
+      orders.filter(order =>
+        !order.status ||
+        order.status === "Pending Verification"
+      ).length;
 
     $("ordersList").innerHTML = orders.length
       ? orders.map(orderCard).join("")
       : '<p class="empty">No customer orders found.</p>';
 
-    $("ordersList").querySelectorAll("[data-save-order]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const order = orders.find(
-          item => String(item.id) === button.dataset.saveOrder
-        );
-        if (order) saveOrderStatus(order);
-      });
-    });
+    $("ordersList")
+      .querySelectorAll("[data-save-order]")
+      .forEach(button => {
+        button.addEventListener("click", () => {
+          const order = orders.find(
+            item =>
+              String(item.id) === button.dataset.saveOrder
+          );
 
-    showMessage("ordersMessage", "Orders loaded successfully.");
+          if (order) {
+            saveOrderStatus(order);
+          }
+        });
+      });
+
+    showMessage(
+      "ordersMessage",
+      "Orders loaded successfully."
+    );
+
   } catch (error) {
     $("ordersList").innerHTML = "";
-    showMessage("ordersMessage", error.message, false);
+
+    showMessage(
+      "ordersMessage",
+      error.message,
+      false
+    );
   }
 }
 
 /* ==========================================
-   REFUND STATUS
+   REFUND MANAGEMENT
 ========================================== */
 
 const REFUND_STATUSES = [
@@ -568,30 +978,101 @@ const REFUND_STATUSES = [
 ];
 
 function refundCard(refund) {
-  const id = escapeHTML(refund.id);
-  const status = REFUND_STATUSES.includes(refund.status)
+  const id = String(refund.id || "");
+
+  const safeId = escapeHTML(id);
+
+  const currentStatus = REFUND_STATUSES.includes(refund.status)
     ? refund.status
     : "Refund Pending Review";
 
-  const options = REFUND_STATUSES.map((item) =>
-    `<option value="${escapeHTML(item)}" ${
-      item === status ? "selected" : ""
-    }>${escapeHTML(item)}</option>`
-  ).join("");
+  const options = REFUND_STATUSES.map(status => `
+    <option
+      value="${escapeHTML(status)}"
+      ${status === currentStatus ? "selected" : ""}
+    >
+      ${escapeHTML(status)}
+    </option>
+  `).join("");
 
   return `
     <article class="record">
-      <h3>Refund #${id}</h3>
-      <p><strong>Order ID:</strong> ${escapeHTML(refund.orderId || "Not specified")}</p>
-      <p><strong>Customer:</strong> ${escapeHTML(refund.customerName || "Not provided")}</p>
-      <p><strong>Email:</strong> ${escapeHTML(refund.customerEmail || "")}</p>
-      <p><strong>Reason:</strong> ${escapeHTML(refund.reason || "No reason provided")}</p>
-      <p><strong>Current status:</strong> ${escapeHTML(refund.status || "Refund Pending Review")}</p>
+
+      <h3>Refund Request #${safeId}</h3>
+
+      <span class="badge badge-demo">
+        DEMO REFUND
+      </span>
+
+      <p>
+        <strong>Order ID:</strong>
+        ${escapeHTML(refund.orderId || "Not specified")}
+      </p>
+
+      <p>
+        <strong>Customer:</strong>
+        ${escapeHTML(refund.customerName || "Not provided")}
+      </p>
+
+      <p>
+        <strong>Email:</strong>
+        ${escapeHTML(refund.customerEmail || "")}
+      </p>
+
+      <p>
+        <strong>Service:</strong>
+        ${escapeHTML(refund.service || "Not specified")}
+      </p>
+
+      <p>
+        <strong>Payment method:</strong>
+        ${escapeHTML(refund.paymentMethod || "Not specified")}
+      </p>
+
+      <p>
+        <strong>Reason:</strong>
+        ${escapeHTML(refund.reason || "No reason provided")}
+      </p>
+
+      <p>
+        <strong>Current status:</strong>
+        ${escapeHTML(refund.status || "Refund Pending Review")}
+      </p>
+
+      <p>
+        <strong>Submitted:</strong>
+        ${escapeHTML(formatDate(refund.createdAt))}
+      </p>
+
+      <div class="warning">
+        Updating this refund status only changes the demo record.
+        It does not return money to the customer.
+      </div>
+
       <div class="record-actions">
-        <label for="refund-status-${id}">Update refund status</label>
-        <select id="refund-status-${id}">${options}</select>
-        <button type="button" data-save-refund="${id}">Save Refund Status</button>
-        <p id="refund-message-${id}" class="message" role="status"></p>
+
+        <label for="refund-status-${safeId}">
+          Update Refund Status
+        </label>
+
+        <select id="refund-status-${safeId}">
+          ${options}
+        </select>
+
+        <button
+          type="button"
+          data-save-refund="${safeId}"
+        >
+          Save Refund Status
+        </button>
+
+        <p
+          id="refund-message-${safeId}"
+          class="message"
+          role="status"
+          aria-live="polite"
+        ></p>
+
       </div>
     </article>
   `;
@@ -599,29 +1080,52 @@ function refundCard(refund) {
 
 async function saveRefundStatus(refund) {
   const id = String(refund.id);
+
   const select = $("refund-status-" + id);
+
   const button = document.querySelector(
     `[data-save-refund="${CSS.escape(id)}"]`
   );
+
   const newStatus = select.value;
-  const oldStatus = refund.status || "Refund Pending Review";
+
+  const oldStatus =
+    refund.status || "Refund Pending Review";
 
   if (newStatus === oldStatus) {
-    showMessage("refund-message-" + id, "No status change to save.");
+    showMessage(
+      "refund-message-" + id,
+      "No status change to save."
+    );
+
     return;
   }
 
   button.disabled = true;
-  showMessage("refund-message-" + id, "Saving refund status...");
+
+  showMessage(
+    "refund-message-" + id,
+    "Saving refund status..."
+  );
 
   try {
     await apiRequest(
-      "/api/admin/refunds/" + encodeURIComponent(id) + "/status",
+      "/api/admin/refunds/" +
+        encodeURIComponent(id) +
+        "/status",
       {
         method: "POST",
-        body: JSON.stringify({ status: newStatus })
+
+        body: JSON.stringify({
+          status: newStatus
+        })
       }
     );
+
+    let notificationMessage =
+      "Demo refund status saved. No money was transferred.";
+
+    let notificationSuccess = true;
 
     try {
       await sendCustomerStatusEmail({
@@ -633,32 +1137,50 @@ async function saveRefundStatus(refund) {
         kind: "refund"
       });
 
-      showMessage(
-        "refund-message-" + id,
-        "Refund status saved. EmailJS accepted the customer notification."
-      );
+      notificationMessage +=
+        " EmailJS accepted the customer notification.";
+
     } catch (emailError) {
-      showMessage(
-        "refund-message-" + id,
-        "Refund status saved, but the email failed: " + emailError.message,
-        false
-      );
+      notificationSuccess = false;
+
+      notificationMessage +=
+        " Email notification failed: " +
+        emailError.message;
     }
 
+    showMessage(
+      "refundsMessage",
+      notificationMessage,
+      notificationSuccess
+    );
+
     await loadRefunds();
+
   } catch (error) {
-    showMessage("refund-message-" + id, error.message, false);
+    showMessage(
+      "refund-message-" + id,
+      error.message,
+      false
+    );
   } finally {
     button.disabled = false;
   }
 }
 
 async function loadRefunds() {
-  showMessage("refundsMessage", "Loading refund requests...");
+  showMessage(
+    "refundsMessage",
+    "Loading refund requests..."
+  );
 
   try {
-    const data = await apiRequest("/api/admin/refunds");
-    const refunds = Array.isArray(data) ? data : (data.refunds || []);
+    const data = await apiRequest(
+      "/api/admin/refunds"
+    );
+
+    const refunds = Array.isArray(data)
+      ? data
+      : data.refunds || [];
 
     $("totalRefunds").textContent = refunds.length;
 
@@ -666,19 +1188,34 @@ async function loadRefunds() {
       ? refunds.map(refundCard).join("")
       : '<p class="empty">No refund requests found.</p>';
 
-    $("refundsList").querySelectorAll("[data-save-refund]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const refund = refunds.find(
-          item => String(item.id) === button.dataset.saveRefund
-        );
-        if (refund) saveRefundStatus(refund);
-      });
-    });
+    $("refundsList")
+      .querySelectorAll("[data-save-refund]")
+      .forEach(button => {
+        button.addEventListener("click", () => {
+          const refund = refunds.find(
+            item =>
+              String(item.id) === button.dataset.saveRefund
+          );
 
-    showMessage("refundsMessage", "Refund requests loaded successfully.");
+          if (refund) {
+            saveRefundStatus(refund);
+          }
+        });
+      });
+
+    showMessage(
+      "refundsMessage",
+      "Refund requests loaded successfully."
+    );
+
   } catch (error) {
     $("refundsList").innerHTML = "";
-    showMessage("refundsMessage", error.message, false);
+
+    showMessage(
+      "refundsMessage",
+      error.message,
+      false
+    );
   }
 }
 
@@ -687,13 +1224,24 @@ async function loadRefunds() {
 ========================================== */
 
 async function loadDashboard() {
-  await Promise.all([loadOrders(), loadRefunds()]);
+  await Promise.all([
+    loadOrders(),
+    loadRefunds()
+  ]);
 }
 
-$("refreshOrdersButton").addEventListener("click", loadOrders);
-$("refreshRefundsButton").addEventListener("click", loadRefunds);
+$("refreshOrdersButton").addEventListener(
+  "click",
+  loadOrders
+);
+
+$("refreshRefundsButton").addEventListener(
+  "click",
+  loadRefunds
+);
 
 checkAdminSession();
 </script>
+
 </body>
 </html>
