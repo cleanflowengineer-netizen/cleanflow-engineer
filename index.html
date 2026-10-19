@@ -8,8 +8,6 @@
   <meta name="description" content="CleanFlow Engineering provides industrial water quality testing, laboratory analysis, treatment recommendations, and water treatment chemical solutions.">
 
   <link rel="stylesheet" href="styles.css">
-
-  <!-- Load EmailJS before your website JavaScript -->
   <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script src="script.js" defer></script>
 </head>
@@ -538,7 +536,7 @@
         <span class="payment-option-content">
           <span class="payment-icon">💳</span>
           <strong>Credit Card</strong>
-          <small>Demo only — card processing unavailable</small>
+          <small>Safe card-payment simulation</small>
         </span>
       </label>
 
@@ -547,7 +545,7 @@
         <span class="payment-option-content">
           <span class="payment-icon">💳</span>
           <strong>Debit Card</strong>
-          <small>Demo only — card processing unavailable</small>
+          <small>Safe card-payment simulation</small>
         </span>
       </label>
 
@@ -577,13 +575,36 @@
       <p class="qr-note">Demo placeholder only. Replace with your own bank QR code.</p>
     </div>
 
+    <!-- SAFE CARD DEMO -->
     <div id="cardPayment" class="payment-notice" hidden>
-      <strong>Card Payment Unavailable</strong>
+      <h4>💳 Credit / Debit Card Demo</h4>
+
+      <p><strong>DEMO ONLY — NO MONEY WILL BE CHARGED.</strong></p>
+
       <p>
-        Direct credit and debit card processing is not connected.
-        For this demonstration, select GCash or Online Bank Transfer.
-        Never enter your card number, CVV, or PIN on this website.
+        Choose a simulated result to demonstrate the checkout process.
+        Do not enter real payment-card details.
       </p>
+
+      <label for="demoCardType">Card Type</label>
+      <select id="demoCardType">
+        <option value="">Select card type</option>
+        <option value="Credit Card">Credit Card</option>
+        <option value="Debit Card">Debit Card</option>
+      </select>
+
+      <label for="demoCardResult">Simulated Payment Result</label>
+      <select id="demoCardResult">
+        <option value="">Choose a test result</option>
+        <option value="success">Simulate Successful Payment</option>
+        <option value="declined">Simulate Declined Payment</option>
+      </select>
+
+      <button type="button" class="btn primary" id="runCardDemoButton">
+        Test Demo Payment
+      </button>
+
+      <p id="cardDemoResult" role="status" aria-live="polite"></p>
     </div>
 
     <div class="payment-proof">
@@ -720,6 +741,80 @@
       </a>
     </div>
   </div>
+
+  <!-- CARD DEMO BEHAVIOR -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const paymentRadios =
+        document.querySelectorAll('input[name="paymentMethod"]');
+
+      const gcashPayment = document.getElementById("gcashPayment");
+      const bankPayment = document.getElementById("bankPayment");
+      const cardPayment = document.getElementById("cardPayment");
+
+      const demoCardType = document.getElementById("demoCardType");
+      const demoCardResult = document.getElementById("demoCardResult");
+      const runCardDemoButton = document.getElementById("runCardDemoButton");
+      const cardDemoResult = document.getElementById("cardDemoResult");
+
+      function updatePaymentDisplay() {
+        const selected = document.querySelector(
+          'input[name="paymentMethod"]:checked'
+        );
+        const method = selected ? selected.value : "";
+
+        gcashPayment.hidden = method !== "GCash";
+        bankPayment.hidden = method !== "Online Bank Transfer";
+        cardPayment.hidden =
+          method !== "Credit Card" && method !== "Debit Card";
+
+        if (method === "Credit Card" || method === "Debit Card") {
+          demoCardType.value = method;
+        }
+
+        cardDemoResult.textContent = "";
+      }
+
+      paymentRadios.forEach(function (radio) {
+        radio.addEventListener("change", updatePaymentDisplay);
+      });
+
+      runCardDemoButton.addEventListener("click", function () {
+        const selected = document.querySelector(
+          'input[name="paymentMethod"]:checked'
+        );
+
+        if (!selected ||
+            !["Credit Card", "Debit Card"].includes(selected.value)) {
+          cardDemoResult.textContent =
+            "Please select Credit Card or Debit Card first.";
+          return;
+        }
+
+        if (demoCardType.value !== selected.value) {
+          cardDemoResult.textContent =
+            "Please select the same card type as your chosen payment method.";
+          return;
+        }
+
+        if (!demoCardResult.value) {
+          cardDemoResult.textContent =
+            "Please choose a simulated payment result.";
+          return;
+        }
+
+        if (demoCardResult.value === "success") {
+          cardDemoResult.textContent =
+            "DEMO SUCCESS: The simulated card payment succeeded. No money was charged. This is not a real payment confirmation.";
+        } else {
+          cardDemoResult.textContent =
+            "DEMO DECLINED: The simulated card payment was declined. No money was charged. You can try the successful demo result.";
+        }
+      });
+
+      updatePaymentDisplay();
+    });
+  </script>
 
 </body>
 </html>
