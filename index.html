@@ -1016,30 +1016,40 @@
       </div>
 
 
-      <!-- GCash QR -->
-      <div id="gcashPayment" class="qr-payment" hidden>
+    <!-- GCash QR Payment -->
+<div id="gcashPayment" class="qr-payment" hidden>
 
-        <h3>Pay with GCash</h3>
+    <h3>Pay with GCash</h3>
 
+    <p>
+        Scan the QR code below using your GCash application.
+    </p>
+
+    <img
+        src="./gcash-qrcode.png"
+        alt="CleanFlow Engineering GCash payment QR code"
+        class="payment-qr"
+        width="250"
+        height="250"
+        loading="lazy"
+    >
+
+    <p class="qr-note">
+        Scan the QR code using GCash and follow the instructions
+        in your GCash application to complete your payment.
+    </p>
+
+    <div class="payment-notice">
+        <strong>Payment Verification Notice</strong>
         <p>
-          For a demonstration, scan the sample QR code below.
+            After completing your payment, follow the instructions
+            on the checkout form to submit your payment details.
+            Your order will remain pending until the administrator
+            reviews the payment.
         </p>
+    </div>
 
-        <img
-          src="https://placehold.co/250x250/e0f2fe/075985?text=GCash+QR"
-          alt="Placeholder GCash QR code for demonstration"
-          class="payment-qr"
-          width="250"
-          height="250"
-          loading="lazy"
-        >
-
-        <p class="qr-note">
-          This is a placeholder QR code, not a working payment QR code.
-        </p>
-
-      </div>
-
+</div>
 
       <!-- CONDITION 1: ONLINE BANK TRANSFER (4 BANKS + 16 NUMBERS ONLY) -->
       <div id="bankPayment" class="qr-payment bank-checkout-panel" hidden>
