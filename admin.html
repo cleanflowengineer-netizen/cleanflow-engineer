@@ -277,8 +277,6 @@
 
 <main>
 
-  <!-- ADMIN LOGIN -->
-
   <section id="loginPanel" class="panel">
     <h2>Administrator Login</h2>
 
@@ -311,8 +309,6 @@
     </form>
   </section>
 
-  <!-- DASHBOARD -->
-
   <section id="dashboard" class="hidden">
 
     <div class="notice">
@@ -342,8 +338,6 @@
       </div>
     </div>
 
-    <!-- CUSTOMER ORDERS -->
-
     <section class="panel">
       <h2>Customer Orders</h2>
 
@@ -360,8 +354,6 @@
 
       <div id="ordersList"></div>
     </section>
-
-    <!-- REFUND REQUESTS -->
 
     <section class="panel">
       <h2>Refund Requests</h2>
@@ -419,10 +411,10 @@ const $ = id => document.getElementById(id);
 function showMessage(id, message, success = true) {
   const element = $(id);
 
-  element.textContent = message;
+  if (!element) return;
 
-  element.className =
-    "message " + (success ? "success" : "error");
+  element.textContent = message;
+  element.className = "message " + (success ? "success" : "error");
 }
 
 function escapeHTML(value) {
@@ -485,10 +477,39 @@ async function apiRequest(url, options = {}) {
 }
 
 /* ==========================================
-   EMAIL NOTIFICATIONS
+   EMAIL NOTIFICATIONS TO BOTH RECIPIENTS
 ========================================== */
 
-async function sendCustomerStatusEmail({
+async function sendOneStatusEmail(recipientEmail, parameters) {
+  if (!window.emailjs || !emailJsReady) {
+    throw new Error(
+      "EmailJS is unavailable. Check your internet connection."
+    );
+  }
+
+  if (!recipientEmail) {
+    throw new Error("The recipient email address is missing.");
+  }
+
+  // The EmailJS template must use {{to_email}} as its recipient.
+  const result = await window.emailjs.send(
+    EMAILJS_SERVICE_ID,
+    EMAILJS_CUSTOMER_TEMPLATE_ID,
+    {
+      ...parameters,
+      to_email: recipientEmail,
+      customer_email: recipientEmail
+    }
+  );
+
+  if (!result || result.status !== 200) {
+    throw new Error("EmailJS did not confirm the email request.");
+  }
+
+  return result;
+}
+
+async function sendStatusEmails({
   email,
   customerName,
   orderId,
@@ -496,63 +517,84 @@ async function sendCustomerStatusEmail({
   status,
   kind
 }) {
-  if (!window.emailjs || !emailJsReady) {
-    throw new Error(
-      "EmailJS is unavailable. Check your internet connection."
-    );
-  }
-
-  if (!email) {
-    throw new Error(
-      "The customer's email address is missing."
-    );
-  }
-
   const isRefund = kind === "refund";
 
-  const parameters = {
-    to_email: email,
-    customer_email: email,
+  const subjectType = isRefund
+    ? "Refund status update"
+    : "Order status update";
 
+  const customerMessage = isRefund
+    ? `Your CleanFlow refund request for order ${orderId} is now "${status}". This is a school-project demonstration. No money is transferred automatically.`
+    : `Your CleanFlow order ${orderId} for ${service || "a CleanFlow service"} is now "${status}". This is a school-project demonstration. Card payments are simulated.`;
+
+  const baseParameters = {
     to_name: customerName || "Customer",
     customer_name: customerName || "Customer",
-
-    order_id: orderId || "",
+    order_id: String(orderId || ""),
     service_name: service || "CleanFlow Engineering service",
-
-    status: status,
+    status,
     payment_status: status,
     order_status: status,
     refund_status: status,
-
-    notification_type: isRefund
-      ? "Refund status update"
-      : "Order status update",
-
+    notification_type: subjectType,
     admin_email: ADMIN_EMAIL,
-
-    message: isRefund
-      ? "Your CleanFlow refund request status is now: " +
-        status +
-        ". This is a school-project demonstration. No money is transferred automatically."
-      : "Your CleanFlow order status is now: " +
-        status +
-        ". This is a school-project demonstration. Card payments are simulated."
+    message: customerMessage
   };
 
-  const result = await window.emailjs.send(
-    EMAILJS_SERVICE_ID,
-    EMAILJS_CUSTOMER_TEMPLATE_ID,
-    parameters
-  );
+  // Attempt both emails independently so one failure doesn't
+  // prevent the other recipient from receiving a notification.
+  const results = await Promise.allSettled([
+    sendOneStatusEmail(email, {
+      ...baseParameters,
+      message: customerMessage
+    }),
 
-  if (!result || result.status !== 200) {
-    throw new Error(
-      "EmailJS did not confirm the email request."
-    );
+    sendOneStatusEmail(ADMIN_EMAIL, {
+      ...baseParameters,
+      to_name: "CleanFlow Administrator",
+      customer_name: customerName || "Customer",
+      message:
+        `CleanFlow administrator notification.\n\n` +
+        `Customer: ${customerName || "Not provided"}\n` +
+        `Customer email: ${email || "Not provided"}\n` +
+        `Record: ${isRefund ? "Refund request" : "Order"}\n` +
+        `Order/refund reference: ${orderId || "Not provided"}\n` +
+        `Service: ${service || "Not specified"}\n` +
+        `Updated status: ${status}\n\n` +
+        `School project demonstration only. This notification does not verify a real payment or transfer money.`
+    })
+  ]);
+
+  const customerSent = results[0].status === "fulfilled";
+  const adminSent = results[1].status === "fulfilled";
+
+  return {
+    customerSent,
+    adminSent,
+    customerError: customerSent ? "" : results[0].reason?.message,
+    adminError: adminSent ? "" : results[1].reason?.message
+  };
+}
+
+function describeEmailResults(results) {
+  if (results.customerSent && results.adminSent) {
+    return "Customer and administrator email notifications were accepted by EmailJS.";
   }
 
-  return result;
+  if (results.customerSent && !results.adminSent) {
+    return "Customer email sent, but administrator email failed: " +
+      (results.adminError || "Unknown error.");
+  }
+
+  if (!results.customerSent && results.adminSent) {
+    return "Administrator email sent, but customer email failed: " +
+      (results.customerError || "Unknown error.");
+  }
+
+  return "Both email notifications failed. Customer: " +
+    (results.customerError || "Unknown error.") +
+    " Administrator: " +
+    (results.adminError || "Unknown error.");
 }
 
 /* ==========================================
@@ -560,38 +602,22 @@ async function sendCustomerStatusEmail({
 ========================================== */
 
 function showDashboard(isLoggedIn) {
-  $("loginPanel").classList.toggle(
-    "hidden",
-    isLoggedIn
-  );
-
-  $("dashboard").classList.toggle(
-    "hidden",
-    !isLoggedIn
-  );
-
-  $("logoutButton").classList.toggle(
-    "hidden",
-    !isLoggedIn
-  );
+  $("loginPanel").classList.toggle("hidden", isLoggedIn);
+  $("dashboard").classList.toggle("hidden", !isLoggedIn);
+  $("logoutButton").classList.toggle("hidden", !isLoggedIn);
 }
 
 $("loginForm").addEventListener("submit", async event => {
   event.preventDefault();
 
   const button = $("loginButton");
-
   button.disabled = true;
 
-  showMessage(
-    "loginMessage",
-    "Signing in..."
-  );
+  showMessage("loginMessage", "Signing in...");
 
   try {
     await apiRequest("/api/admin/login", {
       method: "POST",
-
       body: JSON.stringify({
         password: $("adminPassword").value
       })
@@ -600,15 +626,10 @@ $("loginForm").addEventListener("submit", async event => {
     $("adminPassword").value = "";
 
     showDashboard(true);
-
     await loadDashboard();
 
   } catch (error) {
-    showMessage(
-      "loginMessage",
-      error.message,
-      false
-    );
+    showMessage("loginMessage", error.message, false);
   } finally {
     button.disabled = false;
   }
@@ -624,21 +645,14 @@ $("logoutButton").addEventListener("click", async () => {
   }
 
   showDashboard(false);
-
-  showMessage(
-    "loginMessage",
-    "You have been logged out."
-  );
+  showMessage("loginMessage", "You have been logged out.");
 });
 
 async function checkAdminSession() {
   try {
     await apiRequest("/api/admin/session");
-
     showDashboard(true);
-
     await loadDashboard();
-
   } catch {
     showDashboard(false);
   }
@@ -656,7 +670,6 @@ const ORDER_STATUSES = [
 
 function orderCard(order) {
   const id = String(order.id || "");
-
   const safeId = escapeHTML(id);
 
   const currentStatus = ORDER_STATUSES.includes(order.status)
@@ -667,12 +680,9 @@ function orderCard(order) {
     <option
       value="${escapeHTML(status)}"
       ${status === currentStatus ? "selected" : ""}
-    >
-      ${escapeHTML(status)}
-    </option>
+    >${escapeHTML(status)}</option>
   `).join("");
 
-  // Support both receipt properties from the backend.
   const receiptUrl =
     order.receipt?.url ||
     order.receiptUrl ||
@@ -713,107 +723,51 @@ function orderCard(order) {
     ? `
       <p>
         <strong>Receipt:</strong>
-        <a
-          href="${escapeHTML(receiptUrl)}"
-          target="_blank"
-          rel="noopener noreferrer"
-        >View Uploaded Receipt</a>
+        <a href="${escapeHTML(receiptUrl)}"
+           target="_blank"
+           rel="noopener noreferrer">View Uploaded Receipt</a>
       </p>
     `
     : `
-      <p>
-        <strong>Receipt:</strong>
-        ${isCard
-          ? "Not required for the card demo."
-          : "No receipt available."}
+      <p><strong>Receipt:</strong>
+        ${isCard ? "Not required for the card demo." : "No receipt available."}
       </p>
     `;
 
   return `
     <article class="record">
-
       <h3>Order #${safeId}</h3>
-
       ${paymentBadge}
 
-      <p>
-        <strong>Customer:</strong>
-        ${escapeHTML(order.customerName || "Not provided")}
-      </p>
-
-      <p>
-        <strong>Email:</strong>
-        ${escapeHTML(order.customerEmail || "")}
-      </p>
-
-      <p>
-        <strong>Company:</strong>
-        ${escapeHTML(order.company || "Not provided")}
-      </p>
-
-      <p>
-        <strong>Service:</strong>
-        ${escapeHTML(order.service || "Not specified")}
-      </p>
-
-      <p>
-        <strong>Payment method:</strong>
-        ${escapeHTML(order.paymentMethod || "Not specified")}
-      </p>
-
-      <p>
-        <strong>Payment status:</strong>
-        ${escapeHTML(paymentStatus)}
-      </p>
-
-      <p>
-        <strong>Order status:</strong>
-        ${escapeHTML(order.status || "Pending Verification")}
-      </p>
-
-      <p>
-        <strong>Payment reference:</strong>
-        ${escapeHTML(order.paymentReference || "Not provided")}
-      </p>
-
-      <p>
-        <strong>Customer notes:</strong>
-        ${escapeHTML(order.notes || "None")}
-      </p>
-
-      <p>
-        <strong>Submitted:</strong>
-        ${escapeHTML(formatDate(order.createdAt))}
-      </p>
+      <p><strong>Customer:</strong> ${escapeHTML(order.customerName || "Not provided")}</p>
+      <p><strong>Email:</strong> ${escapeHTML(order.customerEmail || "")}</p>
+      <p><strong>Company:</strong> ${escapeHTML(order.company || "Not provided")}</p>
+      <p><strong>Service:</strong> ${escapeHTML(order.service || "Not specified")}</p>
+      <p><strong>Payment method:</strong> ${escapeHTML(order.paymentMethod || "Not specified")}</p>
+      <p><strong>Payment status:</strong> ${escapeHTML(paymentStatus)}</p>
+      <p><strong>Order status:</strong> ${escapeHTML(order.status || "Pending Verification")}</p>
+      <p><strong>Payment reference:</strong> ${escapeHTML(order.paymentReference || "Not provided")}</p>
+      <p><strong>Customer notes:</strong> ${escapeHTML(order.notes || "None")}</p>
+      <p><strong>Submitted:</strong> ${escapeHTML(formatDate(order.createdAt))}</p>
 
       ${receiptHTML}
-
       ${demoWarning}
 
       <div class="record-actions">
-
-        <label for="order-status-${safeId}">
-          Update Order Status
-        </label>
+        <label for="order-status-${safeId}">Update Order Status</label>
 
         <select id="order-status-${safeId}">
           ${options}
         </select>
 
-        <button
-          type="button"
-          data-save-order="${safeId}"
-        >
+        <button type="button" data-save-order="${safeId}">
           Save Order Status
         </button>
 
-        <p
-          id="order-message-${safeId}"
-          class="message"
-          role="status"
-          aria-live="polite"
-        ></p>
-
+        <p id="order-message-${safeId}"
+           class="message"
+           role="status"
+           aria-live="polite"></p>
       </div>
     </article>
   `;
@@ -821,7 +775,6 @@ function orderCard(order) {
 
 async function saveOrderStatus(order) {
   const id = String(order.id);
-
   const select = $("order-status-" + id);
 
   const button = document.querySelector(
@@ -829,47 +782,36 @@ async function saveOrderStatus(order) {
   );
 
   const newStatus = select.value;
-
-  const oldStatus =
-    order.status || "Pending Verification";
+  const oldStatus = order.status || "Pending Verification";
 
   if (newStatus === oldStatus) {
-    showMessage(
-      "order-message-" + id,
-      "No status change to save."
-    );
-
+    showMessage("order-message-" + id, "No status change to save.");
     return;
   }
 
   button.disabled = true;
-
-  showMessage(
-    "order-message-" + id,
-    "Saving order status..."
-  );
+  showMessage("order-message-" + id, "Saving order status...");
 
   try {
     await apiRequest(
-      "/api/admin/orders/" +
-        encodeURIComponent(id) +
-        "/status",
+      "/api/admin/orders/" + encodeURIComponent(id) + "/status",
       {
         method: "POST",
-
-        body: JSON.stringify({
-          status: newStatus
-        })
+        body: JSON.stringify({ status: newStatus })
       }
     );
 
-    let notificationMessage =
-      "Order status saved successfully.";
+    // The backend status update succeeded. Email failures must
+    // not incorrectly imply that the order update itself failed.
+    showMessage(
+      "order-message-" + id,
+      "Order status saved. Sending email notifications..."
+    );
 
-    let notificationSuccess = true;
+    let emailResults;
 
     try {
-      await sendCustomerStatusEmail({
+      emailResults = await sendStatusEmails({
         email: order.customerEmail,
         customerName: order.customerName,
         orderId: order.id,
@@ -878,46 +820,34 @@ async function saveOrderStatus(order) {
         kind: "order"
       });
 
-      notificationMessage +=
-        " EmailJS accepted the customer notification.";
-
+      showMessage(
+        "ordersMessage",
+        "Order status saved. " + describeEmailResults(emailResults),
+        emailResults.customerSent && emailResults.adminSent
+      );
     } catch (emailError) {
-      notificationSuccess = false;
-
-      notificationMessage +=
-        " Email notification failed: " +
-        emailError.message;
+      showMessage(
+        "ordersMessage",
+        "Order status saved, but email notifications could not be processed: " +
+          emailError.message,
+        false
+      );
     }
-
-    showMessage(
-      "ordersMessage",
-      notificationMessage,
-      notificationSuccess
-    );
 
     await loadOrders();
 
   } catch (error) {
-    showMessage(
-      "order-message-" + id,
-      error.message,
-      false
-    );
+    showMessage("order-message-" + id, error.message, false);
   } finally {
     button.disabled = false;
   }
 }
 
 async function loadOrders() {
-  showMessage(
-    "ordersMessage",
-    "Loading orders..."
-  );
+  showMessage("ordersMessage", "Loading orders...");
 
   try {
-    const data = await apiRequest(
-      "/api/admin/orders"
-    );
+    const data = await apiRequest("/api/admin/orders");
 
     const orders = Array.isArray(data)
       ? data
@@ -925,11 +855,9 @@ async function loadOrders() {
 
     $("totalOrders").textContent = orders.length;
 
-    $("pendingOrders").textContent =
-      orders.filter(order =>
-        !order.status ||
-        order.status === "Pending Verification"
-      ).length;
+    $("pendingOrders").textContent = orders.filter(order =>
+      !order.status || order.status === "Pending Verification"
+    ).length;
 
     $("ordersList").innerHTML = orders.length
       ? orders.map(orderCard).join("")
@@ -940,29 +868,18 @@ async function loadOrders() {
       .forEach(button => {
         button.addEventListener("click", () => {
           const order = orders.find(
-            item =>
-              String(item.id) === button.dataset.saveOrder
+            item => String(item.id) === button.dataset.saveOrder
           );
 
-          if (order) {
-            saveOrderStatus(order);
-          }
+          if (order) saveOrderStatus(order);
         });
       });
 
-    showMessage(
-      "ordersMessage",
-      "Orders loaded successfully."
-    );
+    showMessage("ordersMessage", "Orders loaded successfully.");
 
   } catch (error) {
     $("ordersList").innerHTML = "";
-
-    showMessage(
-      "ordersMessage",
-      error.message,
-      false
-    );
+    showMessage("ordersMessage", error.message, false);
   }
 }
 
@@ -979,7 +896,6 @@ const REFUND_STATUSES = [
 
 function refundCard(refund) {
   const id = String(refund.id || "");
-
   const safeId = escapeHTML(id);
 
   const currentStatus = REFUND_STATUSES.includes(refund.status)
@@ -990,59 +906,23 @@ function refundCard(refund) {
     <option
       value="${escapeHTML(status)}"
       ${status === currentStatus ? "selected" : ""}
-    >
-      ${escapeHTML(status)}
-    </option>
+    >${escapeHTML(status)}</option>
   `).join("");
 
   return `
     <article class="record">
-
       <h3>Refund Request #${safeId}</h3>
 
-      <span class="badge badge-demo">
-        DEMO REFUND
-      </span>
+      <span class="badge badge-demo">DEMO REFUND</span>
 
-      <p>
-        <strong>Order ID:</strong>
-        ${escapeHTML(refund.orderId || "Not specified")}
-      </p>
-
-      <p>
-        <strong>Customer:</strong>
-        ${escapeHTML(refund.customerName || "Not provided")}
-      </p>
-
-      <p>
-        <strong>Email:</strong>
-        ${escapeHTML(refund.customerEmail || "")}
-      </p>
-
-      <p>
-        <strong>Service:</strong>
-        ${escapeHTML(refund.service || "Not specified")}
-      </p>
-
-      <p>
-        <strong>Payment method:</strong>
-        ${escapeHTML(refund.paymentMethod || "Not specified")}
-      </p>
-
-      <p>
-        <strong>Reason:</strong>
-        ${escapeHTML(refund.reason || "No reason provided")}
-      </p>
-
-      <p>
-        <strong>Current status:</strong>
-        ${escapeHTML(refund.status || "Refund Pending Review")}
-      </p>
-
-      <p>
-        <strong>Submitted:</strong>
-        ${escapeHTML(formatDate(refund.createdAt))}
-      </p>
+      <p><strong>Order ID:</strong> ${escapeHTML(refund.orderId || "Not specified")}</p>
+      <p><strong>Customer:</strong> ${escapeHTML(refund.customerName || "Not provided")}</p>
+      <p><strong>Email:</strong> ${escapeHTML(refund.customerEmail || "")}</p>
+      <p><strong>Service:</strong> ${escapeHTML(refund.service || "Not specified")}</p>
+      <p><strong>Payment method:</strong> ${escapeHTML(refund.paymentMethod || "Not specified")}</p>
+      <p><strong>Reason:</strong> ${escapeHTML(refund.reason || "No reason provided")}</p>
+      <p><strong>Current status:</strong> ${escapeHTML(refund.status || "Refund Pending Review")}</p>
+      <p><strong>Submitted:</strong> ${escapeHTML(formatDate(refund.createdAt))}</p>
 
       <div class="warning">
         Updating this refund status only changes the demo record.
@@ -1050,29 +930,20 @@ function refundCard(refund) {
       </div>
 
       <div class="record-actions">
-
-        <label for="refund-status-${safeId}">
-          Update Refund Status
-        </label>
+        <label for="refund-status-${safeId}">Update Refund Status</label>
 
         <select id="refund-status-${safeId}">
           ${options}
         </select>
 
-        <button
-          type="button"
-          data-save-refund="${safeId}"
-        >
+        <button type="button" data-save-refund="${safeId}">
           Save Refund Status
         </button>
 
-        <p
-          id="refund-message-${safeId}"
-          class="message"
-          role="status"
-          aria-live="polite"
-        ></p>
-
+        <p id="refund-message-${safeId}"
+           class="message"
+           role="status"
+           aria-live="polite"></p>
       </div>
     </article>
   `;
@@ -1080,7 +951,6 @@ function refundCard(refund) {
 
 async function saveRefundStatus(refund) {
   const id = String(refund.id);
-
   const select = $("refund-status-" + id);
 
   const button = document.querySelector(
@@ -1088,47 +958,32 @@ async function saveRefundStatus(refund) {
   );
 
   const newStatus = select.value;
-
-  const oldStatus =
-    refund.status || "Refund Pending Review";
+  const oldStatus = refund.status || "Refund Pending Review";
 
   if (newStatus === oldStatus) {
-    showMessage(
-      "refund-message-" + id,
-      "No status change to save."
-    );
-
+    showMessage("refund-message-" + id, "No status change to save.");
     return;
   }
 
   button.disabled = true;
-
-  showMessage(
-    "refund-message-" + id,
-    "Saving refund status..."
-  );
+  showMessage("refund-message-" + id, "Saving refund status...");
 
   try {
     await apiRequest(
-      "/api/admin/refunds/" +
-        encodeURIComponent(id) +
-        "/status",
+      "/api/admin/refunds/" + encodeURIComponent(id) + "/status",
       {
         method: "POST",
-
-        body: JSON.stringify({
-          status: newStatus
-        })
+        body: JSON.stringify({ status: newStatus })
       }
     );
 
-    let notificationMessage =
-      "Demo refund status saved. No money was transferred.";
-
-    let notificationSuccess = true;
+    showMessage(
+      "refund-message-" + id,
+      "Demo refund status saved. Sending email notifications..."
+    );
 
     try {
-      await sendCustomerStatusEmail({
+      const emailResults = await sendStatusEmails({
         email: refund.customerEmail,
         customerName: refund.customerName,
         orderId: refund.orderId || refund.id,
@@ -1137,46 +992,36 @@ async function saveRefundStatus(refund) {
         kind: "refund"
       });
 
-      notificationMessage +=
-        " EmailJS accepted the customer notification.";
+      showMessage(
+        "refundsMessage",
+        "Demo refund status saved; no money was transferred. " +
+          describeEmailResults(emailResults),
+        emailResults.customerSent && emailResults.adminSent
+      );
 
     } catch (emailError) {
-      notificationSuccess = false;
-
-      notificationMessage +=
-        " Email notification failed: " +
-        emailError.message;
+      showMessage(
+        "refundsMessage",
+        "Demo refund status saved; no money was transferred. " +
+          "Email notifications failed: " + emailError.message,
+        false
+      );
     }
-
-    showMessage(
-      "refundsMessage",
-      notificationMessage,
-      notificationSuccess
-    );
 
     await loadRefunds();
 
   } catch (error) {
-    showMessage(
-      "refund-message-" + id,
-      error.message,
-      false
-    );
+    showMessage("refund-message-" + id, error.message, false);
   } finally {
     button.disabled = false;
   }
 }
 
 async function loadRefunds() {
-  showMessage(
-    "refundsMessage",
-    "Loading refund requests..."
-  );
+  showMessage("refundsMessage", "Loading refund requests...");
 
   try {
-    const data = await apiRequest(
-      "/api/admin/refunds"
-    );
+    const data = await apiRequest("/api/admin/refunds");
 
     const refunds = Array.isArray(data)
       ? data
@@ -1193,29 +1038,18 @@ async function loadRefunds() {
       .forEach(button => {
         button.addEventListener("click", () => {
           const refund = refunds.find(
-            item =>
-              String(item.id) === button.dataset.saveRefund
+            item => String(item.id) === button.dataset.saveRefund
           );
 
-          if (refund) {
-            saveRefundStatus(refund);
-          }
+          if (refund) saveRefundStatus(refund);
         });
       });
 
-    showMessage(
-      "refundsMessage",
-      "Refund requests loaded successfully."
-    );
+    showMessage("refundsMessage", "Refund requests loaded successfully.");
 
   } catch (error) {
     $("refundsList").innerHTML = "";
-
-    showMessage(
-      "refundsMessage",
-      error.message,
-      false
-    );
+    showMessage("refundsMessage", error.message, false);
   }
 }
 
@@ -1230,15 +1064,8 @@ async function loadDashboard() {
   ]);
 }
 
-$("refreshOrdersButton").addEventListener(
-  "click",
-  loadOrders
-);
-
-$("refreshRefundsButton").addEventListener(
-  "click",
-  loadRefunds
-);
+$("refreshOrdersButton").addEventListener("click", loadOrders);
+$("refreshRefundsButton").addEventListener("click", loadRefunds);
 
 checkAdminSession();
 </script>
