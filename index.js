@@ -1,4 +1,3 @@
-
 const http = require("node:http");
 const fs = require("node:fs/promises");
 const path = require("node:path");
@@ -9,6 +8,7 @@ const DATA_DIR = path.join(ROOT, "payment-data");
 const RECEIPTS_DIR = path.join(DATA_DIR, "receipts");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const REFUNDS_FILE = path.join(DATA_DIR, "refunds.json");
+
 const PORT = Number(process.env.PORT || 3000);
 
 const ADMIN_PASSWORD =
@@ -56,8 +56,7 @@ const sessions = new Map();
 async function ensureJsonFile(file) {
   try {
     await fs.access(file);
-  } catch (error) {
-    if (error.code !== "ENOENT") throw error;
+  } catch {
     await fs.writeFile(file, "[]", "utf8");
   }
 }
@@ -71,42 +70,30 @@ async function initializeStorage() {
 async function readRecords(file) {
   await ensureJsonFile(file);
 
-  let data;
+  const records = JSON.parse(
+    await fs.readFile(file, "utf8")
+  );
 
-  try {
-    data = JSON.parse(await fs.readFile(file, "utf8"));
-  } catch {
+  if (!Array.isArray(records)) {
     throw new Error(
-      "Could not read " + path.basename(file) +
-      ". Check that the file contains valid JSON."
+      "Invalid data file: " + path.basename(file)
     );
   }
 
-  if (!Array.isArray(data)) {
-    throw new Error(
-      "The data file must contain a JSON array: " +
-      path.basename(file)
-    );
-  }
-
-  return data;
+  return records;
 }
 
 async function saveRecords(file, records) {
-  const temporaryFile = file + "." + crypto.randomUUID() + ".tmp";
+  const temporaryFile =
+    file + "." + crypto.randomUUID() + ".tmp";
 
-  try {
-    await fs.writeFile(
-      temporaryFile,
-      JSON.stringify(records, null, 2),
-      "utf8"
-    );
+  await fs.writeFile(
+    temporaryFile,
+    JSON.stringify(records, null, 2),
+    "utf8"
+  );
 
-    await fs.rename(temporaryFile, file);
-  } catch (error) {
-    await fs.rm(temporaryFile, { force: true }).catch(() => {});
-    throw error;
-  }
+  await fs.rename(temporaryFile, file);
 }
 
 function sendJson(res, statusCode, data, extraHeaders = {}) {
@@ -176,6 +163,7 @@ function requireAdmin(req, res) {
     sendJson(res, 401, {
       error: "Administrator login required. Please log in again."
     });
+
     return false;
   }
 
@@ -246,17 +234,27 @@ async function saveReceipt(receipt) {
   );
 
   if (!match) {
-    throw new Error("Receipt must be JPG, PNG, WEBP, or PDF.");
+    throw new Error(
+      "Receipt must be JPG, PNG, WEBP, or PDF."
+    );
   }
 
   const contentType = match[1];
-  const fileContents = Buffer.from(match[2], "base64");
+  const base64 = match[2];
+  const fileContents = Buffer.from(base64, "base64");
+
+  // Reject malformed base64 data.
+  if (fileContents.toString("base64") !== base64) {
+    throw new Error("Invalid receipt file data.");
+  }
 
   if (
-    !fileContents.length ||
+    fileContents.length === 0 ||
     fileContents.length > MAX_RECEIPT_SIZE
   ) {
-    throw new Error("Receipt must be smaller than 4 MB.");
+    throw new Error(
+      "Receipt must be smaller than 4 MB."
+    );
   }
 
   const filename =
@@ -279,26 +277,27 @@ async function saveReceipt(receipt) {
 function orderForAdmin(order) {
   return {
     ...order,
+
+    // Admin dashboard can use either receipt.url
+    // or receiptUrl, depending on its current code.
     receipt: order.receipt
       ? {
           ...order.receipt,
-          url:
-            "/api/admin/receipts/" +
+          url: "/api/admin/receipts/" +
             encodeURIComponent(order.receipt.filename)
         }
+      : null,
+
+    receiptUrl: order.receipt
+      ? "/api/admin/receipts/" +
+          encodeURIComponent(order.receipt.filename)
       : null
   };
 }
 
-function safeOrderForCustomer(order) {
-  return {
-    orderId: order.id,
-    service: order.service,
-    status: order.status,
-    createdAt: order.createdAt,
-    updatedAt: order.updatedAt || null,
-    demo: true
-  };
+function isCardMethod(method) {
+  return method === "Credit Card" ||
+    method === "Debit Card";
 }
 
 const server = http.createServer(async (req, res) => {
@@ -319,19 +318,25 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- HEALTH CHECK ----------------
+
     if (req.method === "GET" && route === "/api/health") {
       return sendJson(res, 200, {
         ok: true,
         service: "CleanFlow demo server",
-        demoMode: true
+        demoMode: true,
+        message: "No real payments or refunds are processed."
       });
     }
 
     // ---------------- ADMIN LOGIN ----------------
+
     if (req.method === "POST" && route === "/api/admin/login") {
       const body = await readJsonBody(req);
+
       const password =
-        typeof body.password === "string" ? body.password : "";
+        typeof body.password === "string"
+          ? body.password
+          : "";
 
       const supplied = Buffer.from(password, "utf8");
       const expected = Buffer.from(ADMIN_PASSWORD, "utf8");
@@ -373,6 +378,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- ADMIN SESSION CHECK ----------------
+
     if (req.method === "GET" && route === "/api/admin/session") {
       if (!requireAdmin(req, res)) return;
 
@@ -383,6 +389,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- ADMIN LOGOUT ----------------
+
     if (req.method === "POST" && route === "/api/admin/logout") {
       const token = parseCookies(req).cleanflow_admin;
 
@@ -403,6 +410,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- ADMIN VIEW ORDERS ----------------
+
     if (req.method === "GET" && route === "/api/admin/orders") {
       if (!requireAdmin(req, res)) return;
 
@@ -414,6 +422,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- ADMIN VIEW REFUNDS ----------------
+
     if (req.method === "GET" && route === "/api/admin/refunds") {
       if (!requireAdmin(req, res)) return;
 
@@ -425,6 +434,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- VIEW A SAVED RECEIPT ----------------
+
     const receiptMatch = route.match(
       /^\/api\/admin\/receipts\/([a-f0-9-]+\.(?:jpg|png|webp|pdf))$/i
     );
@@ -434,6 +444,7 @@ const server = http.createServer(async (req, res) => {
 
       const filename = receiptMatch[1];
       const receiptPath = path.join(RECEIPTS_DIR, filename);
+
       const orders = await readRecords(ORDERS_FILE);
 
       const receiptBelongsToOrder = orders.some(order =>
@@ -453,11 +464,12 @@ const server = http.createServer(async (req, res) => {
         contents = await fs.readFile(receiptPath);
       } catch {
         return sendJson(res, 404, {
-          error: "The saved receipt file could not be found."
+          error: "The receipt file could not be found."
         });
       }
 
       const extension = path.extname(filename).toLowerCase();
+
       const contentType = {
         ".jpg": "image/jpeg",
         ".png": "image/png",
@@ -467,8 +479,8 @@ const server = http.createServer(async (req, res) => {
 
       res.writeHead(200, {
         "Content-Type": contentType,
-        "Content-Disposition":
-          'inline; filename="' + filename + '"',
+        "Content-Disposition": "inline; filename=\"" +
+          filename + "\"",
         "X-Content-Type-Options": "nosniff",
         "Cache-Control": "no-store"
       });
@@ -477,6 +489,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- UPDATE ORDER STATUS ----------------
+
     const orderStatusMatch = route.match(
       /^\/api\/admin\/orders\/([a-f0-9-]+)\/status$/i
     );
@@ -500,6 +513,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const orders = await readRecords(ORDERS_FILE);
+
       const order = orders.find(
         item => item.id === orderStatusMatch[1]
       );
@@ -510,36 +524,23 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      const previousStatus = order.status;
-      const statusChanged = previousStatus !== status;
-
       order.status = status;
       order.updatedAt = new Date().toISOString();
 
       await saveRecords(ORDERS_FILE, orders);
-
-      console.log(
-        "[CleanFlow] Order " + order.id +
-        " status: " + previousStatus + " -> " + status
-      );
 
       return sendJson(res, 200, {
         ok: true,
         message: "Order status updated.",
         orderId: order.id,
         status: order.status,
-        previousStatus,
-        statusChanged,
-        customerName: order.customerName,
-        customerEmail: order.customerEmail,
-        service: order.service,
-        paymentMethod: order.paymentMethod,
-        updatedAt: order.updatedAt,
+        paymentStatus: order.paymentStatus,
         demo: true
       });
     }
 
     // ---------------- UPDATE REFUND STATUS ----------------
+
     const refundStatusMatch = route.match(
       /^\/api\/admin\/refunds\/([a-f0-9-]+)\/status$/i
     );
@@ -553,7 +554,8 @@ const server = http.createServer(async (req, res) => {
       const allowedStatuses = [
         "Refund Pending Review",
         "Refund Approved",
-        "Refund Rejected"
+        "Refund Rejected",
+        "Refund Completed"
       ];
 
       if (!allowedStatuses.includes(status)) {
@@ -563,6 +565,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const refunds = await readRecords(REFUNDS_FILE);
+
       const refund = refunds.find(
         item => item.id === refundStatusMatch[1]
       );
@@ -573,34 +576,27 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      const previousStatus = refund.status;
-      const statusChanged = previousStatus !== status;
-
       refund.status = status;
       refund.updatedAt = new Date().toISOString();
 
-      await saveRecords(REFUNDS_FILE, refunds);
+      // This is a demo record, not an actual money transfer.
+      refund.demo = true;
+      refund.demoNotice =
+        "No real money was refunded.";
 
-      console.log(
-        "[CleanFlow] Refund " + refund.id +
-        " status: " + previousStatus + " -> " + status
-      );
+      await saveRecords(REFUNDS_FILE, refunds);
 
       return sendJson(res, 200, {
         ok: true,
-        message: "Refund status updated.",
+        message: "Demo refund status updated. No money was transferred.",
         refundId: refund.id,
-        orderId: refund.orderId,
         status: refund.status,
-        previousStatus,
-        statusChanged,
-        customerEmail: refund.customerEmail,
-        updatedAt: refund.updatedAt,
         demo: true
       });
     }
 
     // ---------------- CREATE AN ORDER ----------------
+
     if (req.method === "POST" && route === "/api/orders") {
       const body = await readJsonBody(req);
 
@@ -619,8 +615,7 @@ const server = http.createServer(async (req, res) => {
         !paymentMethod
       ) {
         return sendJson(res, 400, {
-          error:
-            "Please complete your name, email, service, and payment method."
+          error: "Please complete your name, email, service, and payment method."
         });
       }
 
@@ -642,17 +637,38 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      if (
-        paymentMethod === "Credit Card" ||
-        paymentMethod === "Debit Card"
-      ) {
-        return sendJson(res, 400, {
-          error:
-            "Card processing is not connected. For this demo, choose GCash or Online Bank Transfer."
-        });
-      }
+      const cardPayment = isCardMethod(paymentMethod);
+      let receipt = null;
+      let paymentStatus;
 
-      const receipt = await saveReceipt(body.receipt);
+      if (cardPayment) {
+        /*
+         * SCHOOL DEMO ONLY:
+         * The browser's demoCardApproved flag is not a secure
+         * payment authorization. This endpoint does not charge
+         * a card or verify a transaction with a payment provider.
+         *
+         * Never accept real card details here or save them.
+         */
+        if (body.demoCardApproved !== true) {
+          return sendJson(res, 400, {
+            error: "Complete the card demonstration first."
+          });
+        }
+
+        paymentStatus =
+          "Demo Payment Successful — No Real Charge";
+      } else {
+        if (!body.receipt) {
+          return sendJson(res, 400, {
+            error: "Please upload your payment receipt."
+          });
+        }
+
+        receipt = await saveReceipt(body.receipt);
+
+        paymentStatus = "Awaiting Manual Verification";
+      }
 
       const order = {
         id: crypto.randomUUID(),
@@ -664,36 +680,44 @@ const server = http.createServer(async (req, res) => {
         paymentReference: paymentReference || null,
         receipt,
         notes,
+
+        // This is the order workflow status.
         status: "Pending Verification",
+
+        // This describes the payment demonstration separately.
+        paymentStatus,
+
         demo: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: null
+        createdAt: new Date().toISOString()
       };
 
       const orders = await readRecords(ORDERS_FILE);
+
       orders.push(order);
+
       await saveRecords(ORDERS_FILE, orders);
 
-      console.log(
-        "[CleanFlow] New demo order saved: " + order.id
-      );
-
       return sendJson(res, 201, {
-        message: "Demo order saved successfully.",
+        message: cardPayment
+          ? "Demo card payment recorded. No real money was charged."
+          : "Order saved. Your receipt is awaiting manual verification.",
+
         orderId: order.id,
         status: order.status,
-        customerEmail: order.customerEmail,
+        paymentStatus: order.paymentStatus,
         demo: true
       });
     }
 
     // ---------------- CHECK CUSTOMER ORDER STATUS ----------------
+
     const customerOrderMatch = route.match(
       /^\/api\/orders\/([a-f0-9-]+)$/i
     );
 
     if (req.method === "GET" && customerOrderMatch) {
       const orders = await readRecords(ORDERS_FILE);
+
       const order = orders.find(
         item => item.id === customerOrderMatch[1]
       );
@@ -704,10 +728,19 @@ const server = http.createServer(async (req, res) => {
         });
       }
 
-      return sendJson(res, 200, safeOrderForCustomer(order));
+      return sendJson(res, 200, {
+        orderId: order.id,
+        service: order.service,
+        status: order.status,
+        paymentStatus: order.paymentStatus || null,
+        createdAt: order.createdAt,
+        demo: true,
+        notice: "This is a school-project demonstration. No real payment was processed."
+      });
     }
 
     // ---------------- SUBMIT A REFUND REQUEST ----------------
+
     if (req.method === "POST" && route === "/api/refunds") {
       const body = await readJsonBody(req);
 
@@ -717,8 +750,7 @@ const server = http.createServer(async (req, res) => {
 
       if (!orderId || !customerEmail || !reason) {
         return sendJson(res, 400, {
-          error:
-            "Please provide your order ID, email, and refund reason."
+          error: "Please provide your order ID, email, and refund reason."
         });
       }
 
@@ -729,6 +761,7 @@ const server = http.createServer(async (req, res) => {
       }
 
       const orders = await readRecords(ORDERS_FILE);
+
       const order = orders.find(item =>
         item.id === orderId &&
         item.customerEmail.toLowerCase() ===
@@ -753,31 +786,30 @@ const server = http.createServer(async (req, res) => {
 
       if (existingRequest) {
         return sendJson(res, 409, {
-          error:
-            "A refund request for this order is already being reviewed."
+          error: "A refund request for this order is already being reviewed."
         });
       }
 
       const refund = {
         id: crypto.randomUUID(),
         orderId,
-        customerEmail,
+        customerName: order.customerName,
+        customerEmail: order.customerEmail,
+        service: order.service,
+        paymentMethod: order.paymentMethod,
         reason,
         status: "Refund Pending Review",
         demo: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: null
+        demoNotice: "No real money will be refunded.",
+        createdAt: new Date().toISOString()
       };
 
       refunds.push(refund);
+
       await saveRecords(REFUNDS_FILE, refunds);
 
-      console.log(
-        "[CleanFlow] Refund request saved: " + refund.id
-      );
-
       return sendJson(res, 201, {
-        message: "Refund request submitted for demo review.",
+        message: "Refund request submitted for demo review. No money has been refunded.",
         refundId: refund.id,
         status: refund.status,
         demo: true
@@ -785,11 +817,15 @@ const server = http.createServer(async (req, res) => {
     }
 
     // ---------------- SERVE WEBSITE FILES ----------------
+
     if (req.method === "GET") {
       const requestedPath =
         route === "/" ? "/index.html" : route;
 
-      const filePath = path.resolve(ROOT, "." + requestedPath);
+      const filePath = path.resolve(
+        ROOT,
+        "." + requestedPath
+      );
 
       if (
         !filePath.startsWith(ROOT + path.sep) &&
@@ -804,7 +840,7 @@ const server = http.createServer(async (req, res) => {
         const stats = await fs.stat(filePath);
 
         if (!stats.isFile()) {
-          throw new Error("Not a file");
+          throw new Error("Not a file.");
         }
 
         const contents = await fs.readFile(filePath);
@@ -821,8 +857,7 @@ const server = http.createServer(async (req, res) => {
         return res.end(contents);
       } catch {
         return sendJson(res, 404, {
-          error:
-            "File not found. Check that index.html, admin.html, styles.css, and script.js are in the project."
+          error: "File not found. Check that index.html, admin.html, styles.css, and script.js are in the project."
         });
       }
     }
@@ -830,8 +865,9 @@ const server = http.createServer(async (req, res) => {
     return sendJson(res, 404, {
       error: "Route not found."
     });
+
   } catch (error) {
-    console.error("[CleanFlow] Request error:", error);
+    console.error("Request error:", error);
 
     if (!res.headersSent && !res.destroyed) {
       return sendJson(res, 400, {
@@ -847,10 +883,15 @@ initializeStorage()
       console.log(
         "CleanFlow demo server running on port " + PORT
       );
-      console.log("Admin demo password: CleanFlowDemo2026!");
-      console.log("Open /admin.html to manage demo orders.");
+
       console.log(
-        "Demo only: no real payments or refunds are processed."
+        "Admin demo password: " + ADMIN_PASSWORD
+      );
+
+      console.log("Open /admin.html to manage demo orders.");
+
+      console.log(
+        "DEMO ONLY: No real payments or refunds are processed."
       );
     });
   })
